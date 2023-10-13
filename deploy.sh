@@ -52,6 +52,8 @@ fi
 # Apply new optimizer_runs and solc_version
 # rpc_url example: 
 # https://polygonzkevm-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}
+# https://sepolia.infura.io/v3/05659145fa4c469e98a8584429872035
+# https://polygonzkevm-testnet.g.alchemy.com/v2/nYG_CkRC5-Tb5I5VO4mXGiGIdFcWj1bd
 if grep -q "$map_key" "$file"; then
     sed -i '' "s/$map_key/$map_key\n$new_optimizer_runs\n$new_solc_version/" "$file"
     echo "Apply optimizer_runs and solc_version successful."
@@ -69,7 +71,6 @@ fi
 
 start=false
 while read line; do
-
     if [ "$line" = "{" ]; then
         start=true
     fi 
@@ -80,5 +81,4 @@ while read line; do
         echo "}" >> config.json
         break
     fi
-    
 done < log

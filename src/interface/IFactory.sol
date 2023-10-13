@@ -12,7 +12,7 @@ interface IFactory {
     function permissionless() external returns (bool);
     function getPairCount(address token0, address token1) external view returns (uint);
     function getPair(address token0, address token1, uint id) external view returns (address);
-    function allPairs(uint id) external view returns (address);
+    function allPairs() external view returns (address[] memory);
     function allPairsLength() external view returns (uint);
     function getInitCodeHash() external pure returns (bytes32);
     function createPair(address tokenA, address tokenB) external returns (address pair);

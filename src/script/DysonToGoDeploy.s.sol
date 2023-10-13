@@ -13,6 +13,8 @@ contract DysonToGoDeployScript is Addresses, Amounts, Test {
     // Default admin fee ratio is 10%
     uint adminFeeRatio = 0.1e18;
 
+    DysonToGo public toGo;
+
     function run() external {
         uint256 toGoFactoryController = vm.envUint("TOGO_FACTORY_CONTROLLER_PRIVATEKEY");
         address toGoFactoryControllerAddress = vm.addr(toGoFactoryController);

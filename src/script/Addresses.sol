@@ -25,6 +25,9 @@ contract Addresses is Script {
         } else if (block.chainid == 11155111) {
             // Sepolia
             key = string.concat(".sepolia.", addrId);
+        } else if (block.chainid == 1442) {
+            // Polygon zkEVM testnet
+            key = string.concat(".polygonZKEVMTestnet.", addrId);
         } else {
             // Default to local testnet
             key = string.concat(".local.", addrId);
