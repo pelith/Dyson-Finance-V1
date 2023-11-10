@@ -22,16 +22,16 @@ contract MainnetDeployScriptPart1 is Addresses, Test {
     Pair public weth_usdc_pair;
 
     // Configs for Router
-    address weth = getAddress("WETH");
-    address usdc = getAddress("USDC");
-    address wbtc = getAddress("WBTC");
+    address weth = getOfficialAddress("WETH");
+    address usdc = getOfficialAddress("USDC");
+    address wbtc = getOfficialAddress("WBTC");
 
     function run() external {
+        address owner = vm.envAddress("OWNER_ADDRESS");
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
-        console.log("%s: %s", "weth", address(weth));
 
         // ------------ Deploy all contracts ------------
         // Deploy TokenSender 
@@ -59,6 +59,12 @@ contract MainnetDeployScriptPart1 is Addresses, Test {
         // rely token to router
         router.rely(address(weth), address(weth_usdc_pair), true); // WETH for weth_usdc_pair
         router.rely(address(usdc), address(weth_usdc_pair), true); // USDC for weth_usdc_pair
+
+        addressBook.file("owner", owner);
+        dyson.transferOwnership(owner);
+        sDyson.transferOwnership(owner);
+        factory.setController(owner);
+        router.transferOwnership(owner);
 
         setAddress(address(addressBook), "addressBook");
         setAddress(address(dyson), "DYSON");

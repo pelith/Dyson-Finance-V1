@@ -18,9 +18,10 @@ import "../util/TreasuryVester.sol";
 import "../util/FeeDistributor.sol";
 import "interface/IERC20.sol";
 import "./Addresses.sol";
+import "./Amounts.sol";
 import "forge-std/Test.sol";
 
-contract MainnetDeployScriptPart2 is Addresses, Test {
+contract MainnetDeployScriptPart2 is Addresses, Amounts, Test {
     DYSON public dyson = DYSON(getAddress("DYSON"));
     sDYSON public sDyson = sDYSON(getAddress("sDYSON"));
     Factory public factory = Factory(getAddress("factory"));
@@ -28,12 +29,11 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
     AddressBook public addressBook = AddressBook(getAddress("addressBook"));
     TokenSender public tokenSender = TokenSender(getAddress("tokenSender"));
     Pair public weth_usdc_pair = Pair(getAddress("wethUsdcPair"));
-    address public vesterRecipient = getAddress("vesterRecipient");
 
     // Configs for Router
-    address weth = getAddress("WETH");
-    address usdc = getAddress("USDC");
-    address wbtc = getAddress("WBTC");
+    address public weth = getOfficialAddress("WETH");
+    address public usdc = getOfficialAddress("USDC");
+    address public wbtc = getOfficialAddress("WBTC");
 
     Agency public agency;
     GaugeFactory public gaugeFactory;
@@ -54,13 +54,13 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
     Pair public wbtc_usdc_pair;
     Pair public dysn_usdc_pair;
 
-    uint constant WEIGHT_DYSN = 102750e12; // sqrt(1250000e6*5000000e18) * 0.00274 *15
-    uint constant WEIGHT_WETH = 1284e12; // ETH price = 1600USD, so W = sqrt(1250000e6*781e18) * 0.00274 *15
-    uint constant WEIGHT_WBTC = 325e7; // BTC price = 25000USD, so W = sqrt(1250000e6*50e8) * 0.00274 *15
-    uint constant BASE = 0; // 0.17e18; // 0.5 / 3
-    uint constant SLOPE = 0.00000009e18;
-    uint constant GLOBALRATE = 0; // 0.951e18;
-    uint constant GLOBALWEIGHT = 821917e18;
+    uint public constant WEIGHT_DYSN = 102750e12; // sqrt(1250000e6*5000000e18) * 0.00274 *15
+    uint public constant WEIGHT_WETH = 1284e12; // ETH price = 1600USD, so W = sqrt(1250000e6*781e18) * 0.00274 *15
+    uint public constant WEIGHT_WBTC = 325e7; // BTC price = 25000USD, so W = sqrt(1250000e6*50e8) * 0.00274 *15
+    uint public constant BASE = 0; // 0.17e18; // 0.5 / 3
+    uint public constant SLOPE = 0.00000009e18;
+    uint public constant GLOBALRATE = 0; // 0.951e18;
+    uint public constant GLOBALWEIGHT = 821917e18;
 
     // Configs for StakingRateModel
     uint initialRate = 0.0625e18;
@@ -69,10 +69,9 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
     uint public feeRateToDao = 0.5e18;
 
     // TreasuryVester configs
-    uint public vestingBegin = block.timestamp + 100;
-    uint public vestingCliff = vestingBegin + 86400; // 1 day
-    uint public vestingEnd = vestingCliff + 86400 * 2; // 2 days
-    uint public vestingAmount = 1000e18; // 1000 DYSN
+    uint public vestingBegin = block.timestamp + 31536000; // 1 year
+    uint public vestingCliff = vestingBegin; // Same as vestingBegin
+    uint public vestingEnd = vestingCliff + 31536000 * 2; // 2 years after vestingBegin
 
     function run() external {
         address owner = vm.envAddress("OWNER_ADDRESS");
@@ -80,12 +79,9 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         address deployer = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
-        console.log("%s: %s", "weth", address(weth));
+        factory.becomeController();
 
         // ------------ Deploy all contracts ------------
-        // Deploy TreasuryVester 
-        vester = new TreasuryVester(address(dyson), vesterRecipient, vestingAmount, vestingBegin, vestingCliff, vestingEnd);
-
         // Deploy Agency
         agency = new Agency(deployer, owner);
 
@@ -128,7 +124,6 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         
         // Setup sDyson
         sDyson.setStakingRateModel(address(rateModel));
-        sDyson.transferOwnership(owner);
 
         // Setup farm
         dysn_usdc_pair.setFarm(address(farm));
@@ -142,6 +137,20 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
 
         // Setup global reward rate
         farm.setGlobalRewardRate(GLOBALRATE, GLOBALWEIGHT);
+
+        // Deploy and setup TreasuryVesters, and stake to sDyson
+        address[] memory recipients = getAddresses("TreasuryRecipients");
+        uint[] memory amounts = getAmounts("TreasuryAmounts");
+        for(uint i = 0; i < recipients.length; ++i) {
+            uint amount = amounts[i];
+            dyson.mint(deployer, amount);
+            uint stakeAmount = amount / 8;
+            uint vestingAmount = amount - stakeAmount;
+            vester = new TreasuryVester(address(dyson), recipients[i], vestingAmount, vestingBegin, vestingCliff, vestingEnd);
+            dyson.transfer(address(vester), vestingAmount);
+            dyson.approve(address(sDyson), stakeAmount);
+            sDyson.stake(recipients[i], stakeAmount, 126144000);  // locakDuration = 4 year (126144000 = 60*60*24*365*4)
+        }
 
         addressBook.file("farm", address(farm));
         addressBook.file("agentNFT", address(agency.agentNFT()));
@@ -169,6 +178,7 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         factory.setController(owner);
         farm.transferOwnership(owner);
         router.transferOwnership(owner);
+        sDyson.transferOwnership(owner);
 
         // --- After deployment, we need to config the following things: ---
         // Fund DYSON & USDC to dysn_usdc_pair
@@ -208,8 +218,6 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         console.log("\"%s\": \"%s\",", "dysn_usdc_feeDistributor", address(dysnFeeDistributor));
         console.log("\"%s\": \"%s\",", "wbtc_usdc_feeDistributor", address(wbtcFeeDistributor));
         console.log("\"%s\": \"%s\",", "weth_usdc_feeDistributor", address(wethFeeDistributor));
-        console.log("\"%s\": \"%s\",", "treasuryVester", address(vester));
-        console.log("\"%s\": \"%s\",", "treasuryVesterRecipient", address(vesterRecipient));
         console.log("\"%s\": \"%s\"", "tokenSender", address(tokenSender));
         console.log("}");
         console.log("}");
