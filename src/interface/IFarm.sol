@@ -19,7 +19,7 @@ interface IFarm {
     function agency() external view returns (address);
     function gov() external view returns (address);
     function owner() external view returns (address);
-    function globalPool() external view returns (address);
+    function globalPool() external view returns (uint weight, uint rewardRate, uint lastUpdateTime, uint lastReserve, address gauge);
     function pools(address poolId) external view returns (uint weight, uint rewardRate, uint lastUpdateTime, uint lastReserve, address gauge);
     function balanceOf(address user) external view returns (uint);
     function cooldown(address user) external view returns (uint);

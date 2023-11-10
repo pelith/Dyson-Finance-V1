@@ -43,9 +43,9 @@ contract MainnetDeployScript is Addresses, Test {
     uint initialRate = 0.0625e18;
 
     // Configs for Router
-    address weth = getAddress("WETH");
-    address usdc = getAddress("USDC");
-    address wbtc = getAddress("WBTC");
+    address weth = getOfficialAddress("WETH");
+    address usdc = getOfficialAddress("USDC");
+    address wbtc = getOfficialAddress("WBTC");
 
     function run() external {
         address owner = vm.envAddress("OWNER_ADDRESS");

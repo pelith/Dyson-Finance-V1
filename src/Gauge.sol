@@ -6,7 +6,7 @@ import "interface/IFarm.sol";
 import "./lib/SqrtMath.sol";
 import "./lib/TransferHelper.sol";
 
-/// @title Gause is a voting contract for liquidity pool
+/// @title Gauge is a voting contract for liquidity pool
 /// @notice Each liquidity pool will have its own Gauge contract.
 /// User deposit sGOV token, i.e., sDYSON token, to Gauge contract to earn additional reward.
 /// This is an ERC20 contract with checkpoints.

@@ -11,7 +11,7 @@ contract DeploymentTest is Addresses, TestUtils {
     address root = address(0x5566);
     uint rootId = 1;
     address owner = vm.envAddress("OWNER_ADDRESS");
-    address weth = getAddress("WETH");
+    address weth = getOfficialAddress("WETH");
     uint initialRate = 0.0625e18;
 
     function setUp() public {
