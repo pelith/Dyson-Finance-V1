@@ -12,7 +12,7 @@ contract DysonToGoFactoryDeployScript is Addresses, Test {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        address weth = getAddress("WETH");
+        address weth = getOfficialAddress("WETH");
         address addressBook = getAddress("addressBook");
 
         vm.startBroadcast(deployerPrivateKey);

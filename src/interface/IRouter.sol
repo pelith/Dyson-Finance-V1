@@ -6,6 +6,8 @@ interface IRouter {
     event TransferOwnership(address newOwner);
 
     function WETH() external view returns (address);
+    function DYSON() external view returns (address);
+    function sDYSON() external view returns (address);
     function DYSON_FACTORY() external view returns (address);
     function CODE_HASH() external view returns (bytes32);
     function owner() external view returns (address);

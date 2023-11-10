@@ -14,10 +14,10 @@ contract DysonToGoDeployScript is Addresses, Test {
         vm.startBroadcast(toGoFactoryController);
 
         DysonToGoFactory toGoFactory = DysonToGoFactory(getAddress("dysonToGoFactory"));
-        address teacher = getAddress("teacherAddress");
+        address teacher = getAddress("toGoOwner");
         address addressBook = getAddress("addressBook");
-        address[] memory gauges = getRelyNeededAddresses(".relyGauges");
-        address[] memory pairs = getRelyNeededAddresses(".relyPairs");
+        address[] memory gauges = getAddresses("relyGauges");
+        address[] memory pairs = getAddresses("relyPairs");
         address dyson = AddressBook(addressBook).govToken();
 
         // Deploy DysonToGo

@@ -3,6 +3,29 @@
 read -p "Please enter Solidity compile version:" solc_version
 read -p "Please enter Solidity optimizer runs:" optimizer_runs
 read -p "Please enter deploy rpc url:" rpc_url
+echo "Please select target script:"
+echo "1: MainnetDeploy"
+echo "2: MainnetDeployPart1"
+echo "3: MainnetDeployPart2"
+echo "4: DysonToGoFactoryDeploy"
+echo "5: DysonToGoDeploy"
+read -p "Please enter target script:" target_script_id
+read -p "Is broadcast? (y/n):" is_broadcast
+
+if [ "$target_script_id" = "1" ]; then
+    target_script="src/script/MainnetDeploy.s.sol:MainnetDeployScript"
+elif [ "$target_script_id" = "2" ]; then
+    target_script="src/script/MainnetDeployPart1.s.sol:MainnetDeployScriptPart1"
+elif [ "$target_script_id" = "3" ]; then
+    target_script="src/script/MainnetDeployPart2.s.sol:MainnetDeployScriptPart2"
+elif [ "$target_script_id" = "4" ]; then
+    target_script="src/script/DysonToGoFactoryDeploy.s.sol:DysonToGoFactoryDeployScript"
+elif [ "$target_script_id" = "5" ]; then
+    target_script="src/script/DysonToGoDeploy.s.sol:DysonToGoDeployScript"
+else
+    echo "Invalid target script."
+    exit 1
+fi
 
 file="foundry.toml"       
 map_key="\[profile.default\]"  
@@ -33,8 +56,13 @@ else
     echo "Search string '\[profile.default\]' not found in the file."
 fi
 
-forge script src/script/MainnetDeployPart1.s.sol:MainnetDeployScriptPart1 --rpc-url $rpc_url --broadcast --use $solc_version --optimizer-runs $optimizer_runs -vvvv >> log
-# forge script src/script/MainnetDeployPart2.s.sol:MainnetDeployScriptPart2 --rpc-url $rpc_url --broadcast --use $solc_version --optimizer-runs $optimizer_runs -vvvv >> log
+# Run the target script
+# target script path example: src/script/MainnetDeployPart2.s.sol:MainnetDeployScriptPart2 
+if [ "$is_broadcast" = "y" ]; then
+    forge script $target_script --rpc-url $rpc_url --broadcast --use $solc_version --optimizer-runs $optimizer_runs -vvvv >> log
+else
+    forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs -vvvv >> log
+fi
 
 start=false
 while read line; do

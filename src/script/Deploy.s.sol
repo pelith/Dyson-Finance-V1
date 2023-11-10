@@ -22,7 +22,7 @@ contract DeployScript is Addresses, Test {
     // Configs for Agency
     address root = address(0x5566);
     // Configs for Router
-    address weth = getAddress("WETH");
+    address weth = getOfficialAddress("WETH");
     // Configs for StakingRateModel
     uint initialRate = 0.0625e18;
 
