@@ -21,7 +21,7 @@ import "./Addresses.sol";
 import "./Amounts.sol";
 import "forge-std/Test.sol";
 
-contract MainnetDeployScriptPart2 is Addresses, Amounts, Test {
+contract MainnetDeployScriptPart2 is Addresses, Test {
     DYSON public dyson = DYSON(getAddress("DYSON"));
     sDYSON public sDyson = sDYSON(getAddress("sDYSON"));
     Factory public factory = Factory(getAddress("factory"));
@@ -137,20 +137,6 @@ contract MainnetDeployScriptPart2 is Addresses, Amounts, Test {
 
         // Setup global reward rate
         farm.setGlobalRewardRate(GLOBALRATE, GLOBALWEIGHT);
-
-        // Deploy and setup TreasuryVesters, and stake to sDyson
-        address[] memory recipients = getAddresses("TreasuryRecipients");
-        uint[] memory amounts = getAmounts("TreasuryAmounts");
-        for(uint i = 0; i < recipients.length; ++i) {
-            uint amount = amounts[i];
-            dyson.mint(deployer, amount);
-            uint stakeAmount = amount / 8;
-            uint vestingAmount = amount - stakeAmount;
-            vester = new TreasuryVester(address(dyson), recipients[i], vestingAmount, vestingBegin, vestingCliff, vestingEnd);
-            dyson.transfer(address(vester), vestingAmount);
-            dyson.approve(address(sDyson), stakeAmount);
-            sDyson.stake(recipients[i], stakeAmount, 126144000);  // locakDuration = 4 year (126144000 = 60*60*24*365*4)
-        }
 
         addressBook.file("farm", address(farm));
         addressBook.file("agentNFT", address(agency.agentNFT()));

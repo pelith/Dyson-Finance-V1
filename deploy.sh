@@ -7,8 +7,9 @@ echo "Please select target script:"
 echo "1: MainnetDeploy"
 echo "2: MainnetDeployPart1"
 echo "3: MainnetDeployPart2"
-echo "4: DysonToGoFactoryDeploy"
-echo "5: DysonToGoDeploy"
+echo "4: TreasuryVesterDeploy"
+echo "5: DysonToGoFactoryDeploy"
+echo "6: DysonToGoDeploy"
 read -p "Please enter target script:" target_script_id
 read -p "Is broadcast? (y/n):" is_broadcast
 
@@ -19,8 +20,10 @@ elif [ "$target_script_id" = "2" ]; then
 elif [ "$target_script_id" = "3" ]; then
     target_script="src/script/MainnetDeployPart2.s.sol:MainnetDeployScriptPart2"
 elif [ "$target_script_id" = "4" ]; then
-    target_script="src/script/DysonToGoFactoryDeploy.s.sol:DysonToGoFactoryDeployScript"
+    target_script="src/script/TreasuryVesterDeploy.s.sol:TreasuryVesterDeployScript"
 elif [ "$target_script_id" = "5" ]; then
+    target_script="src/script/DysonToGoFactoryDeploy.s.sol:DysonToGoFactoryDeployScript"
+elif [ "$target_script_id" = "6" ]; then
     target_script="src/script/DysonToGoDeploy.s.sol:DysonToGoDeployScript"
 else
     echo "Invalid target script."
