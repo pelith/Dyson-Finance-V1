@@ -14,7 +14,6 @@ import "../Gauge.sol";
 import "../Bribe.sol";
 import "../util/AddressBook.sol";
 import "../util/TokenSender.sol";
-import "../util/TreasuryVester.sol";
 import "../util/FeeDistributor.sol";
 import "interface/IERC20.sol";
 import "./Addresses.sol";
@@ -40,7 +39,6 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
     BribeFactory public bribeFactory;
     StakingRateModel public rateModel;
     Farm public farm;
-    TreasuryVester public vester;
     address public wethFeeDistributor;
     address public wbtcFeeDistributor;
     address public dysnFeeDistributor;
@@ -170,8 +168,6 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         // Fund DYSON & USDC to dysn_usdc_pair
         // Fund WBTC & USDC to wbtc_usdc_pair
         // Fund WETH & USDC to weth_usdc_pair
-
-        // Owner need to call 'factory.becomeController();'
 
         console.log("%s", "done");
         
