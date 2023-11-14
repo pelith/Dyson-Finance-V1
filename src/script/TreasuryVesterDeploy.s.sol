@@ -1,29 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.17;
 
-import "../Agency.sol";
+
 import "../DYSON.sol";
 import "../sDYSON.sol";
-import "../Factory.sol";
-import "../GaugeFactory.sol";
-import "../BribeFactory.sol";
-import "../Pair.sol";
-import "../Router.sol";
-import "../Farm.sol";
-import "../Gauge.sol";
-import "../Bribe.sol";
-import "../util/AddressBook.sol";
-import "../util/TokenSender.sol";
 import "../util/TreasuryVester.sol";
-import "../util/FeeDistributor.sol";
-import "interface/IERC20.sol";
 import "./Addresses.sol";
 import "./Amounts.sol";
 import "forge-std/Test.sol";
 
 contract TreasuryVesterDeployScript is Addresses, Amounts, Test {
-    // DYSON public dyson = DYSON(getAddress("DYSON"));
-    // sDYSON public sDyson = sDYSON(getAddress("sDYSON"));
+    DYSON public dyson = DYSON(getAddress("DYSON"));
+    sDYSON public sDyson = sDYSON(getAddress("sDYSON"));
     
     // TreasuryVester configs
     uint public vestingBegin = block.timestamp + 31536000; // 1 year
@@ -38,13 +26,7 @@ contract TreasuryVesterDeployScript is Addresses, Amounts, Test {
         address deployer = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
-
-        DYSON dyson = new DYSON(deployer);
-        sDYSON sDyson = new sDYSON(deployer, address(dyson));
-        StakingRateModel model = new StakingRateModel(0.0625e18);
-        sDyson.setStakingRateModel(address(model));
     
-
         // Deploy and setup TreasuryVesters, and stake to sDyson
         address[] memory recipients = getAddresses("TreasuryRecipients");
         uint[] memory amounts = getAmounts("TreasuryAmounts");
