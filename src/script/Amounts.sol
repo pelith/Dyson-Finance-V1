@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 
 contract Amounts is Script {
 
-    function getAmounts(string memory addrId) internal view returns (uint[] memory) {
+    function getAmounts(string memory addrId) internal returns (uint[] memory) {
         string memory file = vm.readFile("deploy-config.json");
         addrId = string.concat(".", addrId);
         return vm.parseJsonUintArray(file, addrId);

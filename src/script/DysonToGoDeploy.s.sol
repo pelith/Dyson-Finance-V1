@@ -8,9 +8,11 @@ import "./Addresses.sol";
 import "forge-std/Test.sol";
 
 contract DysonToGoDeployScript is Addresses, Test {
+    DysonToGo public toGo;
 
     function run() external {
         uint256 toGoFactoryController = vm.envUint("TOGO_FACTORY_CONTROLLER_PRIVATEKEY");
+        address toGoFactoryControllerAddress = vm.addr(toGoFactoryController);
         vm.startBroadcast(toGoFactoryController);
 
         DysonToGoFactory toGoFactory = DysonToGoFactory(getAddress("dysonToGoFactory"));
@@ -21,7 +23,7 @@ contract DysonToGoDeployScript is Addresses, Test {
         address dyson = AddressBook(addressBook).govToken();
 
         // Deploy DysonToGo
-        DysonToGo toGo = DysonToGo(payable(toGoFactory.createDysonToGo(teacher)));
+        toGo = DysonToGo(payable(toGoFactory.createDysonToGo(toGoFactoryControllerAddress)));
         address sDyson = toGo.sDYSON();
 
         // rely each token for pairs
@@ -40,6 +42,7 @@ contract DysonToGoDeployScript is Addresses, Test {
             toGo.rely(sDyson, gauges[i], true);
         }
         
+        toGo.transferOwnership(teacher);
         console.log("{");
         console.log("\"%s\": \"%s\",", "toGo", address(toGo));
         console.log("}");
