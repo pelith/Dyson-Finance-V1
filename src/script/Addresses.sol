@@ -41,13 +41,13 @@ contract Addresses is Script {
         vm.writeJson(addrStr, path, addrId);
     }
 
-    function getAddress(string memory addrId) internal view returns (address) {
+    function getAddress(string memory addrId) internal returns (address) {
         string memory file = vm.readFile("deploy-config.json");
         addrId = string.concat(".", addrId);
         return vm.parseJsonAddress(file, addrId);
     }
 
-    function getAddresses(string memory addrId) internal view returns (address[] memory) {
+    function getAddresses(string memory addrId) internal returns (address[] memory) {
         string memory file = vm.readFile("deploy-config.json");
         addrId = string.concat(".", addrId);
         return vm.parseJsonAddressArray(file, addrId);
