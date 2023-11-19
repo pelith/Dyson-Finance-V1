@@ -31,7 +31,6 @@ contract MainnetDeployTest is Addresses, TestUtils {
 
     address payable weth;
     address usdc;
-    address wbtc;
     address dyson;
     address sDyson;
     address factory;
@@ -43,23 +42,18 @@ contract MainnetDeployTest is Addresses, TestUtils {
     IBribe dysonBribe;
     IGauge wethGauge;
     IBribe wethBribe; 
-    IGauge wbtcGauge;
-    IBribe wbtcBribe;
     
     uint WEIGHT_DYSN;
     uint WEIGHT_WETH;
-    uint WEIGHT_WBTC;
     uint BASE;
     uint SLOPE;
     uint GLOBALRATE;
     uint GLOBALWEIGHT;
 
     address weth_usdc_pair;
-    address wbtc_usdc_pair;
     address dysn_usdc_pair;
 
     address wethFeeDistributor;
-    address wbtcFeeDistributor;
     address dysnFeeDistributor;
 
     address[] treasuryVesters;
@@ -127,17 +121,14 @@ contract MainnetDeployTest is Addresses, TestUtils {
         treasuryVesters.push(treasuryVesterScript.treasuryVesters(2));
 
         usdc = getOfficialAddress("USDC");
-        wbtc = getOfficialAddress("WBTC");
         weth = payable(getOfficialAddress("WETH"));
         
-        wbtc_usdc_pair = address(script2.wbtc_usdc_pair());
         dysn_usdc_pair = address(script2.dysn_usdc_pair());
         agency = address(script2.agency());
         farm = address(script2.farm());
 
         WEIGHT_DYSN = script2.WEIGHT_DYSN();
         WEIGHT_WETH = script2.WEIGHT_WETH();
-        WEIGHT_WBTC = script2.WEIGHT_WBTC();
         BASE = script2.BASE();
         SLOPE = script2.SLOPE();
         GLOBALRATE = script2.GLOBALRATE();
@@ -146,11 +137,8 @@ contract MainnetDeployTest is Addresses, TestUtils {
         dysonBribe = IBribe(script2.dysonBribe());
         wethGauge = IGauge(script2.wethGauge());
         wethBribe = IBribe(script2.wethBribe());
-        wbtcGauge = IGauge(script2.wbtcGauge());
-        wbtcBribe = IBribe(script2.wbtcBribe());
 
         wethFeeDistributor = script2.wethFeeDistributor();
-        wbtcFeeDistributor = script2.wbtcFeeDistributor();
         dysnFeeDistributor = script2.dysnFeeDistributor();
     }
 
@@ -183,25 +171,12 @@ contract MainnetDeployTest is Addresses, TestUtils {
         assertEq(wethGauge.base(), BASE);
         assertEq(wethGauge.slope(), SLOPE);
 
-        assertEq(address(wbtcGauge.farm()), farm);
-        assertEq(wbtcGauge.SGOV(), sDyson);
-        assertEq(wbtcGauge.poolId(), wbtc_usdc_pair);
-        assertEq(wbtcGauge.weight(), WEIGHT_WBTC);
-        assertEq(wbtcGauge.base(), BASE);
-        assertEq(wbtcGauge.slope(), SLOPE);
-
         // FeeDistributor params check
         assertEq(IFeeDistributor(wethFeeDistributor).owner(), owner);
         assertEq(IFeeDistributor(wethFeeDistributor).pair(), weth_usdc_pair);
         assertEq(IFeeDistributor(wethFeeDistributor).bribe(), address(wethBribe));
         assertEq(IFeeDistributor(wethFeeDistributor).daoWallet(), owner);
         assertEq(IFeeDistributor(wethFeeDistributor).feeRateToDao(), script2.feeRateToDao());
-
-        assertEq(IFeeDistributor(wbtcFeeDistributor).owner(), owner);
-        assertEq(IFeeDistributor(wbtcFeeDistributor).pair(), wbtc_usdc_pair);
-        assertEq(IFeeDistributor(wbtcFeeDistributor).bribe(), address(wbtcBribe));
-        assertEq(IFeeDistributor(wbtcFeeDistributor).daoWallet(), owner);
-        assertEq(IFeeDistributor(wbtcFeeDistributor).feeRateToDao(), script2.feeRateToDao());
 
         assertEq(IFeeDistributor(dysnFeeDistributor).owner(), owner);
         assertEq(IFeeDistributor(dysnFeeDistributor).pair(), dysn_usdc_pair);
@@ -214,10 +189,8 @@ contract MainnetDeployTest is Addresses, TestUtils {
 
         // Pair params check
         assertEq(IPair(weth_usdc_pair).feeTo(), script2.wethFeeDistributor());
-        assertEq(IPair(wbtc_usdc_pair).feeTo(), script2.wbtcFeeDistributor());
         assertEq(IPair(dysn_usdc_pair).feeTo(), script2.dysnFeeDistributor());
         assertEq(address(IPair(weth_usdc_pair).farm()), farm);
-        assertEq(address(IPair(wbtc_usdc_pair).farm()), farm);
         assertEq(address(IPair(dysn_usdc_pair).farm()), farm);
 
         // sDyson params check
@@ -227,10 +200,6 @@ contract MainnetDeployTest is Addresses, TestUtils {
         (uint weight,,,, address gauge) = IFarm(farm).pools(weth_usdc_pair);
         assertEq(gauge, address(wethGauge));
         assertEq(weight, WEIGHT_WETH);
-        
-        (weight,,,, gauge) = IFarm(farm).pools(wbtc_usdc_pair);
-        assertEq(gauge, address(wbtcGauge));
-        assertEq(weight, WEIGHT_WBTC);
 
         (weight,,,, gauge) = IFarm(farm).pools(dysn_usdc_pair);
         assertEq(gauge, address(dysonGauge));
@@ -249,10 +218,8 @@ contract MainnetDeployTest is Addresses, TestUtils {
         assertEq(AddressBook(addressBook).agentNFT(), IAgency(agency).agentNFT());
         assertEq(AddressBook(addressBook).agency(), agency);
         assertEq(AddressBook(addressBook).bribeOfGauge(address(dysonGauge)), address(dysonBribe));
-        assertEq(AddressBook(addressBook).bribeOfGauge(address(wbtcGauge)), address(wbtcBribe));
         assertEq(AddressBook(addressBook).bribeOfGauge(address(wethGauge)), address(wethBribe));
         assertEq(AddressBook(addressBook).getCanonicalIdOfPair(weth, usdc), 1);
-        assertEq(AddressBook(addressBook).getCanonicalIdOfPair(wbtc, usdc), 1);
         assertEq(AddressBook(addressBook).getCanonicalIdOfPair(dyson, usdc), 1);
 
         // Ownership check
@@ -267,13 +234,10 @@ contract MainnetDeployTest is Addresses, TestUtils {
         // Allowance check
         assertEq(IERC20(usdc).allowance(address(script2.router()), weth_usdc_pair), type(uint).max);
         assertEq(IERC20(weth).allowance(address(script2.router()), weth_usdc_pair), type(uint).max);
-        assertEq(IERC20(usdc).allowance(address(script2.router()), wbtc_usdc_pair), type(uint).max);
-        assertEq(IERC20(wbtc).allowance(address(script2.router()), wbtc_usdc_pair), type(uint).max);
         assertEq(IERC20(usdc).allowance(address(script2.router()), dysn_usdc_pair), type(uint).max);
         assertEq(IERC20(dyson).allowance(address(script2.router()), dysn_usdc_pair), type(uint).max);
         assertEq(IERC20(dyson).allowance(address(script2.router()), sDyson), type(uint).max);
         assertEq(IERC20(sDyson).allowance(address(script2.router()), address(dysonGauge)), type(uint).max);
-        assertEq(IERC20(sDyson).allowance(address(script2.router()), address(wbtcGauge)), type(uint).max);
         assertEq(IERC20(sDyson).allowance(address(script2.router()), address(wethGauge)), type(uint).max);
 
         // TreasuryVester params check

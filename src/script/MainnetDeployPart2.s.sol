@@ -32,7 +32,6 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
     // Configs for Router
     address public weth = getOfficialAddress("WETH");
     address public usdc = getOfficialAddress("USDC");
-    address public wbtc = getOfficialAddress("WBTC");
 
     Agency public agency;
     GaugeFactory public gaugeFactory;
@@ -40,21 +39,16 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
     StakingRateModel public rateModel;
     Farm public farm;
     address public wethFeeDistributor;
-    address public wbtcFeeDistributor;
     address public dysnFeeDistributor;
     address public dysonGauge;
     address public dysonBribe;
     address public wethGauge;
     address public wethBribe; 
-    address public wbtcGauge;
-    address public wbtcBribe;
 
-    Pair public wbtc_usdc_pair;
     Pair public dysn_usdc_pair;
 
     uint public constant WEIGHT_DYSN = 102750e12; // sqrt(1250000e6*5000000e18) * 0.00274 *15
     uint public constant WEIGHT_WETH = 1284e12; // ETH price = 1600USD, so W = sqrt(1250000e6*781e18) * 0.00274 *15
-    uint public constant WEIGHT_WBTC = 325e7; // BTC price = 25000USD, so W = sqrt(1250000e6*50e8) * 0.00274 *15
     uint public constant BASE = 0; // 0.17e18; // 0.5 / 3
     uint public constant SLOPE = 0.00000009e18;
     uint public constant GLOBALRATE = 0; // 0.951e18;
@@ -95,7 +89,6 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
 
         // Create pairs
         dysn_usdc_pair = Pair(factory.createPair(address(dyson), address(usdc)));
-        wbtc_usdc_pair = Pair(factory.createPair(address(wbtc), address(usdc)));
 
         // Deploy Gauges and Bribes
         dysonGauge = gaugeFactory.createGauge(address(farm), address(sDyson), address(dysn_usdc_pair), WEIGHT_DYSN, BASE, SLOPE);
@@ -104,11 +97,7 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         wethGauge = gaugeFactory.createGauge(address(farm), address(sDyson), address(weth_usdc_pair), WEIGHT_WETH, BASE, SLOPE);
         wethBribe = bribeFactory.createBribe(wethGauge);
         
-        wbtcGauge = gaugeFactory.createGauge(address(farm), address(sDyson), address(wbtc_usdc_pair), WEIGHT_WBTC, BASE, SLOPE);
-        wbtcBribe = bribeFactory.createBribe(wbtcGauge);
-
         wethFeeDistributor = address(new FeeDistributor(owner, address(weth_usdc_pair), address(wethBribe), owner, feeRateToDao));
-        wbtcFeeDistributor = address(new FeeDistributor(owner, address(wbtc_usdc_pair), address(wbtcBribe), owner, feeRateToDao));
         dysnFeeDistributor = address(new FeeDistributor(owner, address(dysn_usdc_pair), address(dysonBribe), owner, feeRateToDao));
 
         // ------------ Setup configs ------------
@@ -117,7 +106,6 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
 
         // Set feeTo
         weth_usdc_pair.setFeeTo(wethFeeDistributor);   
-        wbtc_usdc_pair.setFeeTo(wbtcFeeDistributor);
         dysn_usdc_pair.setFeeTo(dysnFeeDistributor);  
         
         // Setup sDyson
@@ -126,12 +114,10 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         // Setup farm
         dysn_usdc_pair.setFarm(address(farm));
         weth_usdc_pair.setFarm(address(farm));
-        wbtc_usdc_pair.setFarm(address(farm));
 
         // Setup gauge and bribe
         farm.setPool(address(dysn_usdc_pair), dysonGauge);
         farm.setPool(address(weth_usdc_pair), wethGauge);
-        farm.setPool(address(wbtc_usdc_pair), wbtcGauge);
 
         // Setup global reward rate
         farm.setGlobalRewardRate(GLOBALRATE, GLOBALWEIGHT);
@@ -140,18 +126,13 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         addressBook.file("agentNFT", address(agency.agentNFT()));
         addressBook.file("agency", address(agency));
         addressBook.setBribeOfGauge(address(dysonGauge), address(dysonBribe));
-        addressBook.setBribeOfGauge(address(wbtcGauge), address(wbtcBribe));
         addressBook.setBribeOfGauge(address(wethGauge), address(wethBribe));
         addressBook.setCanonicalIdOfPair(address(dyson), address(usdc), 1);
-        addressBook.setCanonicalIdOfPair(address(wbtc), address(usdc), 1);
 
         // rely token to router
-        router.rely(address(wbtc), address(wbtc_usdc_pair), true); // WBTC for wbtc_usdc_pair
-        router.rely(address(usdc), address(wbtc_usdc_pair), true); // USDC for wbtc_usdc_pair
         router.rely(address(dyson), address(dysn_usdc_pair), true); // DYSN for dysn_usdc_pair
         router.rely(address(usdc), address(dysn_usdc_pair), true); // USDC for dysn_usdc_pair
         router.rely(address(sDyson), address(dysonGauge), true);
-        router.rely(address(sDyson), address(wbtcGauge), true);
         router.rely(address(sDyson), address(wethGauge), true);
         router.rely(address(dyson), address(sDyson), true);
 
@@ -166,7 +147,6 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
 
         // --- After deployment, we need to config the following things: ---
         // Fund DYSON & USDC to dysn_usdc_pair
-        // Fund WBTC & USDC to wbtc_usdc_pair
         // Fund WETH & USDC to weth_usdc_pair
 
         console.log("%s", "done");
@@ -181,24 +161,19 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         console.log("\"%s\": \"%s\",", "sDyson", address(sDyson));
         console.log("\"%s\": \"%s\",", "farm", address(farm));
         console.log("\"tokens\": {");
-        console.log("\"%s\": \"%s\",", "WBTC", address(wbtc));
         console.log("\"%s\": \"%s\",", "WETH", address(weth));
         console.log("\"%s\": \"%s\"", "USDC", address(usdc));
         console.log("},");
         console.log("\"baseTokenPair\": {");
         console.log("\"%s\": \"%s\"", "dysonUsdcPair", address(dysn_usdc_pair));
-        console.log("\"%s\": \"%s\",", "wbtcUsdcPair", address(wbtc_usdc_pair));
         console.log("\"%s\": \"%s\",", "wethUsdcPair", address(weth_usdc_pair));
         console.log("},");
         console.log("\"other\": {");
         console.log("\"%s\": \"%s\",", "dysn_usdc_gauge", address(dysonGauge));
         console.log("\"%s\": \"%s\",", "dysn_usdc_bribe", address(dysonBribe));
-        console.log("\"%s\": \"%s\",", "wbtc_usdc_gauge", address(wbtcGauge));
-        console.log("\"%s\": \"%s\",", "wbtc_usdc_bribe", address(wbtcBribe));
         console.log("\"%s\": \"%s\",", "weth_usdc_gauge", address(wethGauge));
         console.log("\"%s\": \"%s\",", "weth_usdc_bribe", address(wethBribe));
         console.log("\"%s\": \"%s\",", "dysn_usdc_feeDistributor", address(dysnFeeDistributor));
-        console.log("\"%s\": \"%s\",", "wbtc_usdc_feeDistributor", address(wbtcFeeDistributor));
         console.log("\"%s\": \"%s\",", "weth_usdc_feeDistributor", address(wethFeeDistributor));
         console.log("\"%s\": \"%s\"", "tokenSender", address(tokenSender));
         console.log("}");
