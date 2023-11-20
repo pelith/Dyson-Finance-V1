@@ -48,7 +48,7 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
     Pair public dysn_usdc_pair;
 
     uint public constant WEIGHT_DYSN = 102750e12; // sqrt(1250000e6*5000000e18) * 0.00274 *15
-    uint public constant WEIGHT_WETH = 1284e12; // ETH price = 1600USD, so W = sqrt(1250000e6*781e18) * 0.00274 *15
+    uint public constant WEIGHT_WETH = 1149e12; // ETH price = 2000USD, so W = sqrt(1250000e6*625e18) * 0.00274 *15
     uint public constant BASE = 0; // 0.17e18; // 0.5 / 3
     uint public constant SLOPE = 0.00000009e18;
     uint public constant GLOBALRATE = 0; // 0.951e18;
@@ -59,11 +59,6 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
 
     // Fee rate to DAO wallet
     uint public feeRateToDao = 0.5e18;
-
-    // TreasuryVester configs
-    uint public vestingBegin = block.timestamp + 31536000; // 1 year
-    uint public vestingCliff = vestingBegin; // Same as vestingBegin
-    uint public vestingEnd = vestingCliff + 31536000 * 2; // 2 years after vestingBegin
 
     function run() external {
         address owner = vm.envAddress("OWNER_ADDRESS");
