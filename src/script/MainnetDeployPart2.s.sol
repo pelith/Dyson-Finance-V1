@@ -28,6 +28,7 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
     AddressBook public addressBook = AddressBook(getAddress("addressBook"));
     TokenSender public tokenSender = TokenSender(getAddress("tokenSender"));
     Pair public weth_usdc_pair = Pair(getAddress("wethUsdcPair"));
+    address[] public tier1s = getAddresses("Tier1Addresses");
 
     // Configs for Router
     address public weth = getOfficialAddress("WETH");
@@ -47,10 +48,10 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
 
     Pair public dysn_usdc_pair;
 
-    uint public constant WEIGHT_DYSN = 102750e12; // sqrt(1250000e6*5000000e18) * 0.00274 *15
-    uint public constant WEIGHT_WETH = 1149e12; // ETH price = 2000USD, so W = sqrt(1250000e6*625e18) * 0.00274 *15
-    uint public constant BASE = 0; // 0.17e18; // 0.5 / 3
-    uint public constant SLOPE = 0.00000009e18;
+    uint public constant WEIGHT_DYSN = 153600e12; // Dyson price = 0.25USD, localPool.w => sqrt(640000e6*2560000e18) * 0.008 *15
+    uint public constant WEIGHT_WETH = 1717e12; // ETH price = 2000USD, localPool.w => sqrt(640000e6*320e18) * 0.008 *15
+    uint public constant BASE = 0; // 0.25e18 (0.5 / 2)
+    uint public constant SLOPE = 0; // 0.00000009e18;
     uint public constant GLOBALRATE = 0; // 0.951e18;
     uint public constant GLOBALWEIGHT = 821917e18;
 
@@ -64,13 +65,15 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         address owner = vm.envAddress("OWNER_ADDRESS");
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
+        address teamWallet = vm.envAddress("TEAM_WALLET");
+        address daoWallet = vm.envAddress("DAO_WALLET");
 
         vm.startBroadcast(deployerPrivateKey);
         factory.becomeController();
 
         // ------------ Deploy all contracts ------------
         // Deploy Agency
-        agency = new Agency(deployer, owner);
+        agency = new Agency(deployer, teamWallet);
 
         // Deploy GaugeFactory and BribeFactory
         gaugeFactory = new GaugeFactory(deployer);
@@ -92,16 +95,21 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         wethGauge = gaugeFactory.createGauge(address(farm), address(sDyson), address(weth_usdc_pair), WEIGHT_WETH, BASE, SLOPE);
         wethBribe = bribeFactory.createBribe(wethGauge);
         
-        wethFeeDistributor = address(new FeeDistributor(owner, address(weth_usdc_pair), address(wethBribe), owner, feeRateToDao));
-        dysnFeeDistributor = address(new FeeDistributor(owner, address(dysn_usdc_pair), address(dysonBribe), owner, feeRateToDao));
+        wethFeeDistributor = address(new FeeDistributor(daoWallet, address(weth_usdc_pair), address(wethBribe), daoWallet, feeRateToDao));
+        dysnFeeDistributor = address(new FeeDistributor(daoWallet, address(dysn_usdc_pair), address(dysonBribe), daoWallet, feeRateToDao));
 
         // ------------ Setup configs ------------
+        // Add tier1 nodes
+        for(uint i; i < tier1s.length; i++) {
+            agency.adminAdd(tier1s[i]);
+        }
+
         // Setup minters
         dyson.addMinter(address(farm));
 
         // Set feeTo
-        weth_usdc_pair.setFeeTo(wethFeeDistributor);   
-        dysn_usdc_pair.setFeeTo(dysnFeeDistributor);  
+        // weth_usdc_pair.setFeeTo(wethFeeDistributor);   
+        // dysn_usdc_pair.setFeeTo(dysnFeeDistributor);  
         
         // Setup sDyson
         sDyson.setStakingRateModel(address(rateModel));
@@ -115,7 +123,7 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         farm.setPool(address(weth_usdc_pair), wethGauge);
 
         // Setup global reward rate
-        farm.setGlobalRewardRate(GLOBALRATE, GLOBALWEIGHT);
+        // farm.setGlobalRewardRate(GLOBALRATE, GLOBALWEIGHT);
 
         addressBook.file("farm", address(farm));
         addressBook.file("agentNFT", address(agency.agentNFT()));
@@ -134,11 +142,13 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         // transfer ownership
         addressBook.file("owner", owner);
         agency.transferOwnership(owner);
-        dyson.transferOwnership(owner);
+        // dyson.transferOwnership(owner);
         factory.setController(owner);
         farm.transferOwnership(owner);
         router.transferOwnership(owner);
         sDyson.transferOwnership(owner);
+        gaugeFactory.setController(owner);
+        bribeFactory.setController(owner);
 
         // --- After deployment, we need to config the following things: ---
         // Fund DYSON & USDC to dysn_usdc_pair

@@ -188,8 +188,8 @@ contract MainnetDeployTest is Addresses, TestUtils {
         assertEq(IDYSON(dyson).isMinter(address(farm)), true);
 
         // Pair params check
-        assertEq(IPair(weth_usdc_pair).feeTo(), script2.wethFeeDistributor());
-        assertEq(IPair(dysn_usdc_pair).feeTo(), script2.dysnFeeDistributor());
+        // assertEq(IPair(weth_usdc_pair).feeTo(), script2.wethFeeDistributor());
+        // assertEq(IPair(dysn_usdc_pair).feeTo(), script2.dysnFeeDistributor());
         assertEq(address(IPair(weth_usdc_pair).farm()), farm);
         assertEq(address(IPair(dysn_usdc_pair).farm()), farm);
 
