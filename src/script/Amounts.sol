@@ -10,4 +10,10 @@ contract Amounts is Script {
         addrId = string.concat(".", addrId);
         return vm.parseJsonUintArray(file, addrId);
     }
+
+    function getAmount(string memory addrId) internal returns (uint) {
+        string memory file = vm.readFile("deploy-config.json");
+        addrId = string.concat(".", addrId);
+        return vm.parseJsonUint(file, addrId);
+    }
 }
