@@ -5,10 +5,13 @@ import "interface/IPair.sol";
 import "../DysonToGo.sol";
 import "../util/AddressBook.sol";
 import "./Addresses.sol";
+import "./Amounts.sol";
 import "forge-std/Test.sol";
 
-contract DysonToGoDeployScript is Addresses, Test {
+contract DysonToGoDeployScript is Addresses, Amounts, Test {
     DysonToGo public toGo;
+    // Default admin fee ratio is 10%
+    uint adminFeeRatio = 0.1e18;
 
     function run() external {
         uint256 toGoFactoryController = vm.envUint("TOGO_FACTORY_CONTROLLER_PRIVATEKEY");
@@ -20,6 +23,7 @@ contract DysonToGoDeployScript is Addresses, Test {
         address addressBook = getAddress("addressBook");
         address[] memory gauges = getAddresses("relyGauges");
         address[] memory pairs = getAddresses("relyPairs");
+        uint gen = getAmount("tierNumber");
         address dyson = AddressBook(addressBook).govToken();
 
         // Deploy DysonToGo
@@ -41,6 +45,11 @@ contract DysonToGoDeployScript is Addresses, Test {
         for(uint i=0; i < gauges.length; i++) {
             toGo.rely(sDyson, gauges[i], true);
         }
+
+        uint updatePeriod = (gen + 1) * 6000;
+        toGo.setUpdatePeriod(updatePeriod);
+
+        toGo.setAdminFeeRatio(adminFeeRatio);
         
         toGo.transferOwnership(teacher);
         console.log("{");

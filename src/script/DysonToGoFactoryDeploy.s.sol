@@ -10,13 +10,17 @@ import "forge-std/Test.sol";
 contract DysonToGoFactoryDeployScript is Addresses, Test {
 
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("TOGO_FACTORY_CONTROLLER_PRIVATEKEY");
+        address daoWallet = vm.envAddress("DAO_WALLET");
         address deployer = vm.addr(deployerPrivateKey);
         address weth = getOfficialAddress("WETH");
         address addressBook = getAddress("addressBook");
 
         vm.startBroadcast(deployerPrivateKey);
         DysonToGoFactory toGoFactory = new DysonToGoFactory(deployer, weth, addressBook);
+
+        toGoFactory.addController(deployer);
+        toGoFactory.transferOwnership(daoWallet);
 
         console.log("{");
         console.log("\"%s\": \"%s\",", "toGoFactory", address(toGoFactory));
