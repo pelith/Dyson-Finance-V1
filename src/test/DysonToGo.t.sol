@@ -38,11 +38,12 @@ contract DysonToGoTest is TestUtils {
     address WETH = address(new WETHMock(testOwner));
     address token0 = address(new DYSON(testOwner));
     address token1 = address(new DYSON(testOwner));
-    Factory factory = new Factory(testOwner);
-    Pair normalPair = Pair(factory.createPair(token0, token1));
-    Pair weth0Pair = Pair(factory.createPair(WETH, token1)); // WETH is token0
     address gov = address(new DYSON(testOwner));
     address sGov = address(new sDYSON(testOwner, gov));
+    Factory factory = new Factory(testOwner);
+    Pair normalPair = Pair(factory.createPair(token0, token1));
+    Pair dysonPair = Pair(factory.createPair(gov, token0));
+    Pair weth0Pair = Pair(factory.createPair(WETH, token1)); // WETH is token0
     address bribeToken = address(new DYSON(testOwner));
     address bribeToken2 = address(new DYSON(testOwner));
     
@@ -53,6 +54,7 @@ contract DysonToGoTest is TestUtils {
     Gauge normalPairGauge = new Gauge(address(farm), sGov, address(normalPair), 10**24, 10**24, 10**24);
     Bribe bribe = new Bribe(address(normalPairGauge));
     Gauge weth0PairGauge = new Gauge(address(farm), sGov, address(weth0Pair), 10**24, 10**24, 10**24);
+    Gauge dysonPairGauge = new Gauge(address(farm), sGov, address(dysonPair), 10**24, 10**24, 10**24);
     DysonToGoFactory toGoFactory;
     DysonToGo toGo;
 
@@ -77,8 +79,10 @@ contract DysonToGoTest is TestUtils {
         DYSON(gov).addMinter(address(farm));
         normalPair.setFarm(address(farm));
         weth0Pair.setFarm(address(farm));
+        dysonPair.setFarm(address(farm));
         farm.setPool(address(normalPair), address(normalPairGauge));
         farm.setPool(address(weth0Pair), address(weth0PairGauge));
+        farm.setPool(address(dysonPair), address(dysonPairGauge));
         farm.setGlobalRewardRate(GLOBALRATE, GLOBALWEIGHT);
 
         // make poolReserve grow up
@@ -115,6 +119,8 @@ contract DysonToGoTest is TestUtils {
         // Initialize token0 and token1 for pairs.
         deal(token0, address(normalPair), INITIAL_LIQUIDITY_TOKEN);
         deal(token1, address(normalPair), INITIAL_LIQUIDITY_TOKEN);
+        deal(token0, address(dysonPair), INITIAL_LIQUIDITY_TOKEN);
+        deal(gov, address(dysonPair), INITIAL_LIQUIDITY_TOKEN);
         deal(token1, address(weth0Pair), INITIAL_LIQUIDITY_TOKEN);
 
         // Initialize WETH for pairs.
@@ -124,7 +130,7 @@ contract DysonToGoTest is TestUtils {
         IWETH(WETH).transfer(address(weth0Pair), INITIAL_LIQUIDITY_TOKEN);
     
         // Initialize tokens and eth for handy accounts.
-        deal(alice, INITIAL_WEALTH);
+        deal(gov, alice, INITIAL_WEALTH);
         deal(token0, alice, INITIAL_WEALTH);
         deal(token1, alice, INITIAL_WEALTH);
         deal(alice, INITIAL_WEALTH);
@@ -140,10 +146,12 @@ contract DysonToGoTest is TestUtils {
         changePrank(alice);
         IERC20(token0).approve(address(toGo), type(uint).max);
         IERC20(token1).approve(address(toGo), type(uint).max);
+        IERC20(gov).approve(address(toGo), type(uint).max);
         changePrank(bob);
         IERC20(token0).approve(address(toGo), type(uint).max);
         IERC20(token1).approve(address(toGo), type(uint).max);
         sDYSON(sGov).approve(address(normalPairGauge), type(uint).max);
+        sDYSON(sGov).approve(address(dysonPairGauge), type(uint).max);
         changePrank(briber);
         DYSON(bribeToken).approve(address(bribe), type(uint).max);
         DYSON(bribeToken2).approve(address(bribe), type(uint).max);
@@ -153,6 +161,8 @@ contract DysonToGoTest is TestUtils {
         toGo.rely(sGov, address(weth0PairGauge), true);
         toGo.rely(token0, address(normalPair), true);
         toGo.rely(token1, address(normalPair), true);
+        toGo.relyDysonPair(token0, 1, true);
+        toGo.rely(token0, address(dysonPair), true);
         toGo.rely(token1, address(weth0Pair), true);
         toGo.rely(WETH, address(weth0Pair), true);
         
@@ -648,6 +658,30 @@ contract DysonToGoTest is TestUtils {
         assertEq(agency.whois(newAgent), 3);
         assertEq(agentNft.balanceOf(newAgent), 1);
         assertEq(agentNft.ownerOf(agentId), newAgent);
+    }
+
+    // Check `dysonPool` is aligned with its real DYSN balance
+    function testDepositAndWithdrawViaDysonPair() public {
+        uint depositAmount = 10**18;
+        uint period = 1 days;
+
+        vm.startPrank(alice);
+        toGo.deposit(gov, token0, 1, depositAmount, 0, period);
+        skip(period + 1);
+        toGo.deposit(gov, token0, 1, depositAmount, 0, period);
+
+        assertEq(toGo.dysonPool(), IERC20(gov).balanceOf(address(toGo)));
+
+        // alice withdraw 
+        toGo.withdraw(address(dysonPair), 0, alice);
+        assertEq(toGo.dysonPool(), IERC20(gov).balanceOf(address(toGo)));
+        
+        skip(period + 1);
+        toGo.withdraw(address(dysonPair), 1, alice);
+        assertEq(toGo.dysonPool(), IERC20(gov).balanceOf(address(toGo)));
+
+        vm.stopPrank();
+
     }
 
     function _getHashTypedData(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32) {
