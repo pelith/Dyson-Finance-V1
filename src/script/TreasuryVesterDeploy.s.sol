@@ -18,12 +18,20 @@ contract TreasuryVesterDeployScript is Addresses, Amounts, Test {
     uint public vestingCliff = vestingBegin; // Same as vestingBegin
     uint public vestingEnd = vestingCliff + 31536000 * 2; // 2 years after vestingBegin
 
+    uint public ecosystemVestingAmount = 36000000e18; // 200M * 0.18
+    uint public ecosystemVestingBegin = block.timestamp; // In official release, we set 1700640000 (2023/11/22 16:00:00 (GMT+08:00))
+    uint public ecosystemVestingCliff = ecosystemVestingBegin; // Same as ecosystemVestingBegin
+    uint public ecosystemVestingEnd = ecosystemVestingBegin + 1461 days;
+
+    address public daoWallet;
+
     address[] public treasuryVesters;
 
     function run() external {
         address owner = vm.envAddress("OWNER_ADDRESS");
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
+        daoWallet = vm.envAddress("DAO_WALLET");
 
         vm.startBroadcast(deployerPrivateKey);
     
@@ -52,15 +60,9 @@ contract TreasuryVesterDeployScript is Addresses, Amounts, Test {
         }
 
         // Mint Dyson for Ecosystem usage
-        address daoWallet = vm.envAddress("DAO_WALLET");
-        uint vestingAmount = 36000000e18; // 200M * 0.18
-        vestingBegin = 1700640000; // 2023/11/22 16:00:00 (GMT+08:00)
-        vestingCliff = vestingBegin; // Same as vestingBegin
-        vestingEnd = vestingBegin + 1461 days;
-
-        TreasuryVester ecosystemVester = new TreasuryVester(address(dyson), daoWallet, vestingAmount, vestingBegin, vestingCliff, vestingEnd);
+        TreasuryVester ecosystemVester = new TreasuryVester(address(dyson), daoWallet, ecosystemVestingAmount, ecosystemVestingBegin, ecosystemVestingCliff, ecosystemVestingEnd);
         treasuryVesters.push(address(ecosystemVester));
-        dyson.mint(address(ecosystemVester), vestingAmount);
+        dyson.mint(address(ecosystemVester), ecosystemVestingAmount);
         uint daoAmount = 4000000e18; // 200M * 0.02
         dyson.mint(daoWallet, daoAmount);
 
