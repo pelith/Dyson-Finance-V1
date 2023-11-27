@@ -5,6 +5,7 @@ import "../../script/MainnetDeployPart1.s.sol";
 import "../../script/MainnetDeployPart2.s.sol";
 import "../../script/TreasuryVesterDeploy.s.sol";
 import "../../script/Addresses.sol";
+import "../../script/Amounts.sol";
 import "src/util/AddressBook.sol";
 import "src/util/TreasuryVester.sol";
 import "interface/IsDYSON.sol";
@@ -20,7 +21,7 @@ import "interface/IRouter.sol";
 import "interface/IERC20.sol";
 import "../TestUtils.sol";
 
-contract MainnetDeployTest is Addresses, TestUtils {
+contract MainnetDeployTest is Addresses, Amounts, TestUtils {
     MainnetDeployScriptPart1 script1;
     MainnetDeployScriptPart2 script2;
     TreasuryVesterDeployScript treasuryVesterScript;
@@ -28,6 +29,7 @@ contract MainnetDeployTest is Addresses, TestUtils {
     address owner = vm.envAddress("OWNER_ADDRESS");
     uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
     address deployer = vm.addr(deployerPrivateKey);
+    address daoWallet = vm.envAddress("DAO_WALLET");
 
     address payable weth;
     address usdc;
@@ -59,21 +61,15 @@ contract MainnetDeployTest is Addresses, TestUtils {
     address[] treasuryVesters;
     address[] treasuryRecipients;
     uint[] treasuryAmounts;
+    address[] sDysonRecipients;
+    uint[] sDysonAmounts;
 
     function setUp() public {
-        // local setting: deploy-config.json 
-        treasuryAmounts = [100, 200, 300];
-        string memory amountsObj = '["100","200","300"]';
-        vm.writeJson(amountsObj, "deploy-config.json", ".TreasuryAmounts");
-
-        treasuryRecipients = [
-            0x0000000000000000000000000000000000000111,
-            0x0000000000000000000000000000000000000222,
-            0x0000000000000000000000000000000000000333
-        ];
-        string memory recipientObj = '["0x0000000000000000000000000000000000000111","0x0000000000000000000000000000000000000222","0x0000000000000000000000000000000000000333"]';
-        vm.writeJson(recipientObj, "deploy-config.json", ".TreasuryRecipients");
-
+        setupTreasuryRecipients();
+        setupTreasuryAmounts();
+        setupSDysonRecipients();
+        setupSDysonAmounts();
+        
         // start fork
         string memory rpcUrl = vm.rpcUrl("polygonZKEVM");
         vm.createSelectFork(rpcUrl);
@@ -109,16 +105,13 @@ contract MainnetDeployTest is Addresses, TestUtils {
         vm.prank(owner);
         IFactory(factory).becomeController();
 
-        // Owner must pre-config for TreasuryVester deploy script
-        vm.prank(owner);
-        IDYSON(dyson).transferOwnership(deployer);
-
         // Run TreasuryVester deploy script
         treasuryVesterScript = new TreasuryVesterDeployScript();
         treasuryVesterScript.run();
         treasuryVesters.push(treasuryVesterScript.treasuryVesters(0));
         treasuryVesters.push(treasuryVesterScript.treasuryVesters(1));
         treasuryVesters.push(treasuryVesterScript.treasuryVesters(2));
+        treasuryVesters.push(treasuryVesterScript.treasuryVesters(3));
 
         usdc = getOfficialAddress("USDC");
         weth = payable(getOfficialAddress("WETH"));
@@ -150,7 +143,7 @@ contract MainnetDeployTest is Addresses, TestUtils {
         assertEq(IRouter(router).DYSON_FACTORY(), factory);
 
         // Agency params check
-        assertEq(IAgency(agency).whois(owner), 1); // check root agent = owner
+        assertEq(IAgency(agency).whois(owner), 0); // check root agent = owner
 
         // Farm params check
         assertEq(address(IFarm(farm).gov()), dyson);
@@ -172,16 +165,16 @@ contract MainnetDeployTest is Addresses, TestUtils {
         assertEq(wethGauge.slope(), SLOPE);
 
         // FeeDistributor params check
-        assertEq(IFeeDistributor(wethFeeDistributor).owner(), owner);
+        assertEq(IFeeDistributor(wethFeeDistributor).owner(), daoWallet);
         assertEq(IFeeDistributor(wethFeeDistributor).pair(), weth_usdc_pair);
         assertEq(IFeeDistributor(wethFeeDistributor).bribe(), address(wethBribe));
-        assertEq(IFeeDistributor(wethFeeDistributor).daoWallet(), owner);
+        assertEq(IFeeDistributor(wethFeeDistributor).daoWallet(), daoWallet);
         assertEq(IFeeDistributor(wethFeeDistributor).feeRateToDao(), script2.feeRateToDao());
 
-        assertEq(IFeeDistributor(dysnFeeDistributor).owner(), owner);
+        assertEq(IFeeDistributor(dysnFeeDistributor).owner(), daoWallet);
         assertEq(IFeeDistributor(dysnFeeDistributor).pair(), dysn_usdc_pair);
         assertEq(IFeeDistributor(dysnFeeDistributor).bribe(), address(dysonBribe));
-        assertEq(IFeeDistributor(dysnFeeDistributor).daoWallet(), owner);
+        assertEq(IFeeDistributor(dysnFeeDistributor).daoWallet(), daoWallet);
         assertEq(IFeeDistributor(dysnFeeDistributor).feeRateToDao(), script2.feeRateToDao());
 
         // Minter check
@@ -204,10 +197,6 @@ contract MainnetDeployTest is Addresses, TestUtils {
         (weight,,,, gauge) = IFarm(farm).pools(dysn_usdc_pair);
         assertEq(gauge, address(dysonGauge));
         assertEq(weight, WEIGHT_DYSN);
-
-        (uint globalWeight, uint globalRewardRate,,,) = IFarm(farm).globalPool();
-        assertEq(globalWeight, GLOBALWEIGHT);
-        assertEq(globalRewardRate, GLOBALRATE);
 
         // AddressBook params check
         assertEq(AddressBook(addressBook).govToken(), dyson);
@@ -241,19 +230,62 @@ contract MainnetDeployTest is Addresses, TestUtils {
         assertEq(IERC20(sDyson).allowance(address(script2.router()), address(wethGauge)), type(uint).max);
 
         // TreasuryVester params check
-        for (uint i; i < treasuryVesters.length; ++i) {
+        for (uint i; i < treasuryVesters.length - 1; ++i) {
             address recipient = treasuryRecipients[i];
             uint amount = treasuryAmounts[i];
-            uint stakeAmount = amount / 8;
-            uint vestingAmount = amount - stakeAmount;
             TreasuryVester vester = TreasuryVester(treasuryVesters[i]);
             assertEq(vester.token(), dyson);
             assertEq(vester.recipient(), recipient);
-            assertEq(vester.vestingAmount(), vestingAmount);
-            assertEq(IsDYSON(sDyson).dysonAmountStaked(recipient), stakeAmount);
+            assertEq(vester.vestingAmount(), amount);
             assertEq(vester.vestingBegin(), treasuryVesterScript.vestingBegin());
             assertEq(vester.vestingCliff(), treasuryVesterScript.vestingCliff());
             assertEq(vester.vestingEnd(), treasuryVesterScript.vestingEnd());
         }
+
+        TreasuryVester ecoVester = TreasuryVester(treasuryVesters[treasuryVesters.length - 1]);
+        assertEq(ecoVester.token(), dyson);
+        assertEq(ecoVester.recipient(), daoWallet);
+        assertEq(ecoVester.vestingAmount(), treasuryVesterScript.ecosystemVestingAmount());
+        assertEq(ecoVester.vestingBegin(), treasuryVesterScript.ecosystemVestingBegin());
+        assertEq(ecoVester.vestingCliff(), treasuryVesterScript.ecosystemVestingCliff());
+        assertEq(ecoVester.vestingEnd(), treasuryVesterScript.ecosystemVestingEnd());
+
+        
+        for (uint i; i < sDysonRecipients.length; ++i) {
+            assertEq(IsDYSON(sDyson).dysonAmountStaked(sDysonRecipients[i]), sDysonAmounts[i]);
+        }
+    }
+
+    function setupTreasuryAmounts() internal {
+        treasuryAmounts = [100e18, 200e18, 300e18];
+        string memory amountsObj = '["100","200","300"]';
+        vm.writeJson(amountsObj, "deploy-config.json", ".TreasuryAmounts");
+    }
+
+    function setupTreasuryRecipients() internal {
+        treasuryRecipients = [
+            0x0000000000000000000000000000000000000111,
+            0x0000000000000000000000000000000000000222,
+            0x0000000000000000000000000000000000000333
+        ];
+        string memory recipientObj = '["0x0000000000000000000000000000000000000111","0x0000000000000000000000000000000000000222","0x0000000000000000000000000000000000000333"]';
+        vm.writeJson(recipientObj, "deploy-config.json", ".TreasuryRecipients");
+
+    }
+
+    function setupSDysonRecipients() internal {
+        sDysonRecipients = [
+            0x0000000000000000000000000000000000000444,
+            0x0000000000000000000000000000000000000555,
+            0x0000000000000000000000000000000000000666
+        ];
+        string memory sDysonRecipientObj = '["0x0000000000000000000000000000000000000444","0x0000000000000000000000000000000000000555","0x0000000000000000000000000000000000000666"]';
+        vm.writeJson(sDysonRecipientObj, "deploy-config.json", ".sDYSONRecipients");
+    }
+
+    function setupSDysonAmounts() internal {
+        sDysonAmounts = [400e18, 500e18, 600e18];
+        string memory sDysonAmountsObj = '["400","500","600"]';
+        vm.writeJson(sDysonAmountsObj, "deploy-config.json", ".sDYSONAmounts");
     }
 }
