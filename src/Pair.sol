@@ -346,11 +346,11 @@ contract Pair is Feeswap {
     /// but only charges fee base on the fee computed and does not perform actual swap.
     /// Half of the swap fee goes to `feeTo` if `feeTo` is set.
     /// If `farm` is set, this function also computes the amount of SP for the user and calls `farm.grantSP()`.
-    /// The amount of SP = sqrt(input * output) * (preium / PREMIUM_BASE_UNIT)
+    /// The amount of SP = sqrt(input * output) * (premium / PREMIUM_BASE_UNIT)
     /// @dev Re-entrancy protected
     /// @param to Address that owns the note
     /// @param input Amount of token0 to deposit
-    /// @param minOutput Minimum amount of token1 expected to receive if the swap is perfromed
+    /// @param minOutput Minimum amount of token1 expected to receive if the swap is performed
     /// @param time Lock time
     /// @return output Amount of token1 received if the swap is performed
     function deposit0(address to, uint input, uint minOutput, uint time) external lock returns (uint output) {

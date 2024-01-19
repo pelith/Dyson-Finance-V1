@@ -15,6 +15,7 @@ interface IPair {
         uint due;
     }
 
+    function nonces() external view returns (uint);
     function token0() external view returns (address);
     function token1() external view returns (address);
     function getFeeRatio() external view returns(uint64 _feeRatio0, uint64 _feeRatio1);
