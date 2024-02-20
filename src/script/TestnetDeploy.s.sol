@@ -69,17 +69,17 @@ contract TestnetDeployScript is Addresses, Test {
     uint public feeRateToDao = 0.5e18;
 
     // initial liquidity
-    uint constant public WETHPAIR_WETH_LIQUIDITY = 1 ether;
-    uint constant public WETHPAIR_USDC_LIQUIDITY = 1600e6;
+    uint constant public WETHPAIR_WETH_LIQUIDITY = 10 ether;
+    uint constant public WETHPAIR_USDC_LIQUIDITY = 25000e6;
     uint constant public WBTCPAIR_WBTC_LIQUIDITY = 100e8;
-    uint constant public WBTCPAIR_USDC_LIQUIDITY = 2500000e6; // 2.5M USD
+    uint constant public WBTCPAIR_USDC_LIQUIDITY = 4000000e6; // 4M USD
     uint constant public DYSNPAIR_DYSN_LIQUIDITY = 1000000e18; // 1M DYSN
     uint constant public DYSNPAIR_USDC_LIQUIDITY = 250000e6; // 250K USD
 
     function run() external {
-        weth = IWETH(getAddress("WETH"));
         address owner = vm.envAddress("OWNER_ADDRESS");
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        weth = IWETH(getOfficialAddress("WETH"));
         address deployer = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
@@ -170,7 +170,7 @@ contract TestnetDeployScript is Addresses, Test {
         wbtc.approve(address(tokenSender), WBTCPAIR_WBTC_LIQUIDITY);
         dyson.approve(address(tokenSender), DYSNPAIR_DYSN_LIQUIDITY);
 
-        weth.deposit{value : 1 ether}();
+        weth.deposit{value : 10 ether}();
         usdc.mint(deployer, 1e18); // 1e12 USDC
         wbtc.mint(deployer, WBTCPAIR_WBTC_LIQUIDITY); // 100 WBTC
         dyson.mint(deployer, DYSNPAIR_DYSN_LIQUIDITY); // 1M DYSN
@@ -274,10 +274,10 @@ contract TestnetDeployScript is Addresses, Test {
         console.log("\"%s\": \"%s\",", "wbtc_usdc_bribe", address(wbtcBribe));
         console.log("\"%s\": \"%s\",", "weth_usdc_gauge", address(wethGauge));
         console.log("\"%s\": \"%s\"", "weth_usdc_bribe", address(wethBribe));
-        console.log("}");
-        console.log("\"contract side\": {");
+        console.log("\"%s\": \"%s\",", "dysn_usdc_feeDistributor", address(dysnFeeDistributor));
+        console.log("\"%s\": \"%s\",", "weth_usdc_feeDistributor", address(wethFeeDistributor));
+        console.log("\"%s\": \"%s\",", "wbtc_usdc_feeDistributor", address(wbtcFeeDistributor));
         console.log("\"%s\": \"%s\",", "tokenSender", address(tokenSender));
-        console.log("}");
 
         vm.stopBroadcast();
     }

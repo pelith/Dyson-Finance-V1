@@ -10,6 +10,7 @@ echo "3: MainnetDeployPart2"
 echo "4: TreasuryVesterDeploy"
 echo "5: DysonToGoFactoryDeploy"
 echo "6: DysonToGoDeploy"
+echo "7: TestnetDeploy"
 read -p "Please enter target script:" target_script_id
 read -p "Is broadcast? (y/n):" is_broadcast
 
@@ -25,6 +26,8 @@ elif [ "$target_script_id" = "5" ]; then
     target_script="src/script/DysonToGoFactoryDeploy.s.sol:DysonToGoFactoryDeployScript"
 elif [ "$target_script_id" = "6" ]; then
     target_script="src/script/DysonToGoDeploy.s.sol:DysonToGoDeployScript"
+elif [ "$target_script_id" = "7" ]; then
+    target_script="src/script/TestnetDeploy.s.sol:TestnetDeployScript"
 else
     echo "Invalid target script."
     exit 1
@@ -64,9 +67,9 @@ fi
 # Run the target script
 # target script path example: src/script/MainnetDeployPart2.s.sol:MainnetDeployScriptPart2 
 if [ "$is_broadcast" = "y" ]; then
-    forge script $target_script --rpc-url $rpc_url --broadcast --use $solc_version --optimizer-runs $optimizer_runs -vvvv >> log
+    forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs --verifier-url 'https://api.routescan.io/v2/network/testnet/evm/168587773/etherscan' --etherscan-api-key "blast_sepolia" -vvvv --broadcast >> log
 else
-    forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs -vvvv >> log
+    forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs --verifier-url 'https://api.routescan.io/v2/network/testnet/evm/168587773/etherscan' --etherscan-api-key "blast_sepolia" -vvvv >> log
 fi
 
 start=false
