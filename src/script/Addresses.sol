@@ -16,6 +16,8 @@ contract Addresses is Script {
         if (block.chainid == 1) {
             // Mainnet
             key = string.concat(".mainnet.", addrId);
+        } else if (block.chainid == 81457) {
+            key = string.concat(".blast.", addrId);
         } else if (block.chainid == 1101) {
             // Polygon zkEVM
             key = string.concat(".polygonZKEVM.", addrId);
