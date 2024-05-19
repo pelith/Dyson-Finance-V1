@@ -2,20 +2,14 @@ pragma solidity 0.8.17;
 
 // SPDX-License-Identifier: AGPL-3.0-only
 import "interface/IPair.sol";
+import "interface/IFactory.sol";
+import "forge-std/console.sol";
 
 contract AdminPanel {
 
     address public admin;
     uint private unlocked = 1;
-    //pair address => operator address => role level
-    mapping(address => mapping(address => Role)) public operatorRoles;
-    mapping(Role => mapping(bytes4 => bool)) public rolePermissions;
-
-    enum Role { 
-        VIEWER,
-        DEVELOPER, 
-        ADMIN 
-    }
+    mapping(bytes32 => bool) public permission;
 
     constructor() {
         admin = msg.sender;
@@ -33,52 +27,49 @@ contract AdminPanel {
         _;
     }
 
+    //The contractAddr can be the pair address or factory address
+    modifier hasRole(address contractAddr, address operator, bytes4 functionSelector) {
+        bytes32 role = keccak256(abi.encodePacked(contractAddr, operator, functionSelector));
+        require(msg.sender == admin || permission[role] == true, "forbidden");
+        _;
+    }    
+
     function changeAdmin(address newAdmin) external onlyAdmin {
         admin = newAdmin;
     }
 
-    function addRolePermission(Role role, bytes4 functionSelector) public {
-        require(msg.sender == admin, "forbidden");
-        rolePermissions[role][functionSelector] = true;
+    function addRole(address contractAddr, address operator, bytes4 functionSelector) external onlyAdmin{
+        bytes32 role = keccak256(abi.encodePacked(contractAddr, operator, functionSelector));
+        permission[role] = true;
     }
 
-    function removeRolePermission(Role role, bytes4 functionSelector) public {
-        require(msg.sender == admin, "forbidden");
-        delete rolePermissions[role][functionSelector];
+    function removeRole(address contractAddr, address operator, bytes4 functionSelector) external onlyAdmin {
+        bytes32 role = keccak256(abi.encodePacked(contractAddr, operator, functionSelector));
+        delete permission[role];
     }
 
-    function addRole(address pair, address operator, Role role) public {
-        require(msg.sender == admin, "forbidden");
-        operatorRoles[pair][operator] = role;
+    function becomeFactoryController(address factoryAddress) external onlyAdmin {
+        IFactory(factoryAddress).becomeController();
     }
 
-    function removeRole(address pair, address operator) public {
-        require(msg.sender == admin, "forbidden");
-        delete operatorRoles[pair][operator];
+    function createPair(address factoryAddress, address tokenA, address tokenB) external lock hasRole(factoryAddress, msg.sender, this.createPair.selector) returns (address pair){
+        address pairAddr = IFactory(factoryAddress).createPair(tokenA, tokenB);
+        return pairAddr;
     }
 
-    function setPairBasis(address pair, uint basis) external lock {
-        require(msg.sender == admin || _hasRole(pair, msg.sender, this.setPairBasis.selector), "forbidden");
+    function setPairBasis(address pair, uint basis) external lock hasRole(pair, msg.sender, this.setPairBasis.selector){
         IPair(pair).setBasis(basis);
     }
 
-    function setPairHalfLife(address pair, uint64 halfLife) external lock {
-        require(msg.sender == admin || _hasRole(pair, msg.sender, this.setPairHalfLife.selector), "forbidden");
+    function setPairHalfLife(address pair, uint64 halfLife) external lock hasRole(pair, msg.sender, this.setPairHalfLife.selector) {
         IPair(pair).setHalfLife(halfLife);
     }
 
-    function setPairFarm(address pair, address farm) external lock {
-        require(msg.sender == admin || _hasRole(pair, msg.sender, this.setPairFarm.selector), "forbidden");
+    function setPairFarm(address pair, address farm) external lock hasRole(pair, msg.sender, this.setPairFarm.selector){
         IPair(pair).setFarm(farm);
     }
 
-    function setPairFeeTo(address pair, address feeTo) external lock {
-        require(msg.sender == admin || _hasRole(pair, msg.sender, this.setPairFeeTo.selector), "forbidden");
+    function setPairFeeTo(address pair, address feeTo) external lock hasRole(pair, msg.sender, this.setPairFeeTo.selector){
         IPair(pair).setFeeTo(feeTo);
-    }
-
-    function _hasRole(address pair, address operator, bytes4 functionSelector) private view returns (bool) {
-        Role role = operatorRoles[pair][operator];
-        return rolePermissions[role][functionSelector];
     }
 }
