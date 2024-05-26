@@ -31,6 +31,9 @@ contract AdminPanelTest is TestUtils {
         assertEq(factory.controller(), address(adminPanel));
 
         pair = Pair(adminPanel.createPair(address(factory), token0, token1));
+
+        adminPanel.updateValidateRule("basis", 0.1e18, 1e18); // 0.1~1 volitility
+        adminPanel.updateValidateRule("halfLife", 1, 1440); // 24 mins
     }
 
     function testChangeAdmin() public {
@@ -56,7 +59,7 @@ contract AdminPanelTest is TestUtils {
     }
 
     function testAdminPanelCreatePair() public {
-        bytes4 functionSelector = AdminPanel.createPair.selector;
+        bytes4 functionSelector = Factory.createPair.selector;
         bytes32 role = keccak256(abi.encodePacked(address(factory), alice , functionSelector));
         adminPanel.addRole(address(factory), alice, functionSelector);
         assertEq(adminPanel.permission(role), true);
@@ -71,37 +74,51 @@ contract AdminPanelTest is TestUtils {
     }
 
     function testSetPairBasis() public {
-        bytes4 functionSelector = AdminPanel.setPairBasis.selector;
+        bytes4 functionSelector = Pair.setBasis.selector;
         bytes32 role = keccak256(abi.encodePacked(address(pair), alice , functionSelector));
         adminPanel.addRole(address(pair), alice, functionSelector);
         assertEq(adminPanel.permission(role), true);
 
+        uint basis = 0;
         vm.prank(bob);
         vm.expectRevert("forbidden");
-        adminPanel.setPairBasis(address(pair), 100);
+        adminPanel.setPairBasis(address(pair), basis);
 
         vm.prank(alice);
-        adminPanel.setPairBasis(address(pair), 100);
-        assertEq(pair.basis(), 100);
+        vm.expectRevert("Invalid basis value");
+        adminPanel.setPairBasis(address(pair), basis);
+
+        basis = 0.5e18;
+        bool isValid = adminPanel.validateValue("basis", basis);
+        assertTrue(isValid);
+        adminPanel.setPairBasis(address(pair), basis);
+        assertEq(pair.basis(), basis);
     }
 
     function testSetPairHalfLife() public {
-        bytes4 functionSelector = AdminPanel.setPairHalfLife.selector;
+        bytes4 functionSelector = Pair.setHalfLife.selector;
         bytes32 role = keccak256(abi.encodePacked(address(pair), alice , functionSelector));
         adminPanel.addRole(address(pair), alice, functionSelector);
         assertEq(adminPanel.permission(role), true);
 
+        uint64 halfLife = 1441;
         vm.prank(bob);
         vm.expectRevert("forbidden");
-        adminPanel.setPairHalfLife(address(pair), 100);
+        adminPanel.setPairHalfLife(address(pair), halfLife);
 
         vm.prank(alice);
-        adminPanel.setPairHalfLife(address(pair), 100);
-        assertEq(pair.halfLife(), 100);
+        vm.expectRevert("Invalid halfLife value");
+        adminPanel.setPairHalfLife(address(pair), halfLife);
+
+        halfLife = 720;
+        bool isValid = adminPanel.validateValue("halfLife", halfLife);
+        assertTrue(isValid);
+        adminPanel.setPairHalfLife(address(pair), halfLife);
+        assertEq(pair.halfLife(), halfLife);
     }
 
     function testSetPairFarm() public {
-        bytes4 functionSelector = AdminPanel.setPairFarm.selector;
+        bytes4 functionSelector = Pair.setFarm.selector;
         bytes32 role = keccak256(abi.encodePacked(address(pair), alice , functionSelector));
         adminPanel.addRole(address(pair), alice, functionSelector);
         assertEq(adminPanel.permission(role), true);
@@ -116,7 +133,7 @@ contract AdminPanelTest is TestUtils {
     }
 
     function testSetPairFeeTo() public {
-        bytes4 functionSelector = AdminPanel.setPairFeeTo.selector;
+        bytes4 functionSelector = Pair.setFeeTo.selector;
         bytes32 role = keccak256(abi.encodePacked(address(pair), alice , functionSelector));
         adminPanel.addRole(address(pair), alice, functionSelector);
         assertEq(adminPanel.permission(role), true);
@@ -128,5 +145,12 @@ contract AdminPanelTest is TestUtils {
         vm.prank(alice);
         adminPanel.setPairFeeTo(address(pair), address(0x123));
         assertEq(pair.feeTo(), address(0x123));
+    }
+
+
+    function testSetPairHalfLifeForValidator() public {
+        uint64 halfLife = 600;
+        bool isValid = adminPanel.validateValue("halfLife", halfLife);
+        assertTrue(isValid);
     }
 }
