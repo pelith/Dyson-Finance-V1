@@ -1,7 +1,6 @@
 // AdminPanel.t.sol
 pragma solidity 0.8.17;
 
-import "forge-std/console.sol";
 import "src/Pair.sol";
 import "src/Factory.sol";
 import "src/DYSON.sol";
@@ -36,8 +35,8 @@ contract AdminPanelTest is TestUtils {
         adminPanel.updateValidateRule(address(pair), "halfLife", 1, 1440); // 24 mins
     }
 
-    function testChangeAdmin() public {
-        adminPanel.changeAdmin(newAdmin);
+    function testChangeOwner() public {
+        adminPanel.changeOwner(newAdmin);
         assertEq(adminPanel.owner(), newAdmin);
     }
 
