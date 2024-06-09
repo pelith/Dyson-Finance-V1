@@ -5,7 +5,7 @@ import "interface/IPair.sol";
 import "interface/IFactory.sol";
 import "./Factory.sol";
 import "./Pair.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./util/Ownable.sol";
 
 contract AdminPanel is Ownable {
 
@@ -36,8 +36,7 @@ contract AdminPanel is Ownable {
     }
 
     function updateValidateRule(address pair, string memory name, uint256 lowerBound, uint256 upperBound) public onlyOwner {
-        require(lowerBound < upperBound, "Invalid rule bounds");
-        require(lowerBound > 0, "Basis & HalfLife value must be positive");
+        require(lowerBound <= upperBound, "Invalid rule bounds");
         validators[pair][name] = ValidationRule(lowerBound, upperBound);
         emit ValidateRuleUpdated(pair, name, lowerBound, upperBound);
     }
