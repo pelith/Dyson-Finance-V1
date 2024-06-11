@@ -30,9 +30,9 @@ else
     exit 1
 fi
 
-file="foundry.toml"       
-map_key="\[profile.default\]"  
-new_solc_version="solc_version = '$solc_version'" 
+file="foundry.toml"
+map_key="\[profile.default\]"
+new_solc_version="solc_version = '$solc_version'"
 new_optimizer_runs="optimizer_runs = $optimizer_runs"
 
 # search for optimizer_runs and delete it
@@ -50,8 +50,10 @@ else
 fi
 
 # Apply new optimizer_runs and solc_version
-# rpc_url example: 
+# rpc_url example:
 # https://polygonzkevm-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}
+# https://sepolia.infura.io/v3/05659145fa4c469e98a8584429872035
+# https://polygonzkevm-testnet.g.alchemy.com/v2/nYG_CkRC5-Tb5I5VO4mXGiGIdFcWj1bd
 if grep -q "$map_key" "$file"; then
     sed -i '' "s/$map_key/$map_key\n$new_optimizer_runs\n$new_solc_version/" "$file"
     echo "Apply optimizer_runs and solc_version successful."
@@ -59,20 +61,25 @@ else
     echo "Search string '\[profile.default\]' not found in the file."
 fi
 
+# echo "forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs -vvvv --broadcast"
 # Run the target script
-# target script path example: src/script/MainnetDeployPart2.s.sol:MainnetDeployScriptPart2 
+# target script path example: src/script/MainnetDeployPart2.s.sol:MainnetDeployScriptPart2
+# eip 1559 error => --legacy
+# verify code: forge verify-contract $contractAddress $contractName --etherscan-api-key $scanApiKey --watch --verifier-url $verifyUrl
+# xlayer example :https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER_TESTNET
+
+
 if [ "$is_broadcast" = "y" ]; then
-    forge script $target_script --rpc-url $rpc_url --broadcast --use $solc_version --optimizer-runs $optimizer_runs -vvvv >> log
+    forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs -vvvv --broadcast --legacy >> log
 else
-    forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs -vvvv >> log
+    forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs --verifier-url https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER -vvvv --legacy >> log
 fi
 
 start=false
 while read line; do
-
     if [ "$line" = "{" ]; then
         start=true
-    fi 
+    fi
     if [ "$start" = true ]; then
         echo "$line" >> config.json
     fi
@@ -80,5 +87,4 @@ while read line; do
         echo "}" >> config.json
         break
     fi
-    
 done < log

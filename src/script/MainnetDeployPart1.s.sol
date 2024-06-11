@@ -17,14 +17,13 @@ contract MainnetDeployScriptPart1 is Addresses, Test {
     sDYSON public sDyson;
     Factory public factory;
     Router public router;
-    AddressBook public addressBook; 
+    AddressBook public addressBook;
     TokenSender public tokenSender;
     Pair public weth_usdc_pair;
 
     // Configs for Router
     address weth = getOfficialAddress("WETH");
     address usdc = getOfficialAddress("USDC");
-    address wbtc = getOfficialAddress("WBTC");
 
     function run() external {
         address owner = vm.envAddress("OWNER_ADDRESS");
@@ -34,7 +33,7 @@ contract MainnetDeployScriptPart1 is Addresses, Test {
         vm.startBroadcast(deployerPrivateKey);
 
         // ------------ Deploy all contracts ------------
-        // Deploy TokenSender 
+        // Deploy TokenSender
         tokenSender = new TokenSender();
 
         // Deploy Dyson, sDyson, Factory and Router
@@ -75,7 +74,7 @@ contract MainnetDeployScriptPart1 is Addresses, Test {
         setAddress(address(tokenSender), "tokenSender");
 
         console.log("%s", "done");
-        
+
         console.log("{");
         console.log("\"%s\": \"%s\",", "addressBook", address(addressBook));
         console.log("\"%s\": \"%s\",", "wrappedNativeToken", address(weth));
