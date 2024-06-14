@@ -69,12 +69,12 @@ contract sDYSONAirdrop {
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(index, account, amount));
         require(MerkleProof.verify(merkleProof, merkleRoot, node), 'Airdrop: Invalid proof');
-       
+
         // Mark it claimed and send the token.
         _setClaimed(index);
 
         // Transfer sDYSON to account
-        sDYSON(sDyson).stake(account, amount, 21 days);
+        sDYSON(sDyson).stake(account, amount, 28 days); // TODO: need to change by project
 
         emit Claimed(index, account, amount);
     }

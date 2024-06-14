@@ -14,9 +14,9 @@ contract sDYSONAirdropDeployScript is Addresses, Amounts, Test {
     sDYSON public sDyson = sDYSON(getAddress("sDYSON"));
     sDYSONAirdrop public airdrop;
 
-    uint claimStartTime = 1701162600; // ??
-    uint claimEndTime = claimStartTime + 7 days; // ??
-    bytes32 merkleRoot = 0xc972b65d8f6b48484ebd88dc5c589e13c3169aee4e525c14952f6fc92e4c899a; // ??
+    uint claimStartTime = 1718529000; // "6/16 2024 17:10:00 GMT+0800"
+    uint claimEndTime = claimStartTime + 3 days; // "6/19 2024 17:10:00 GMT+0800"
+    bytes32 merkleRoot = 0x9a341a7efc5d188e2b148c4d71386d7767f32d2d69827ae3ed518db8d3e8af93; // zkevm s2-2
 
     function run() external {
         address owner = vm.envAddress("OWNER_ADDRESS");

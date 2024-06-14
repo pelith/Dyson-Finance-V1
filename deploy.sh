@@ -33,9 +33,9 @@ else
     exit 1
 fi
 
-file="foundry.toml"       
-map_key="\[profile.default\]"  
-new_solc_version="solc_version = '$solc_version'" 
+file="foundry.toml"
+map_key="\[profile.default\]"
+new_solc_version="solc_version = '$solc_version'"
 new_optimizer_runs="optimizer_runs = $optimizer_runs"
 
 # search for optimizer_runs and delete it
@@ -53,7 +53,7 @@ else
 fi
 
 # Apply new optimizer_runs and solc_version
-# rpc_url example: 
+# rpc_url example:
 # https://polygonzkevm-mainnet.g.alchemy.com/v2/{ALCHEMY_API_KEY}
 if grep -q "$map_key" "$file"; then
     sed -i '' "s/$map_key/$map_key\n$new_optimizer_runs\n$new_solc_version/" "$file"
@@ -63,7 +63,8 @@ else
 fi
 
 # Run the target script
-# target script path example: src/script/MainnetDeployPart2.s.sol:MainnetDeployScriptPart2 
+# target script path example: src/script/MainnetDeployPart2.s.sol:MainnetDeployScriptPart2
+echo "forge script $target_script --rpc-url $rpc_url --broadcast --use $solc_version --optimizer-runs $optimizer_runs -vvvv"
 if [ "$is_broadcast" = "y" ]; then
     forge script $target_script --rpc-url $rpc_url --broadcast --use $solc_version --optimizer-runs $optimizer_runs -vvvv >> log
 else
@@ -75,7 +76,7 @@ while read line; do
 
     if [ "$line" = "{" ]; then
         start=true
-    fi 
+    fi
     if [ "$start" = true ]; then
         echo "$line" >> config.json
     fi
@@ -83,5 +84,5 @@ while read line; do
         echo "}" >> config.json
         break
     fi
-    
+
 done < log
