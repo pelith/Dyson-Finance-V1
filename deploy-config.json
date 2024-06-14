@@ -23,6 +23,10 @@
     "WETH": "0xe538905cf8410324e03a5a23c1c177a474d59b2b",
     "USDC": "0x74b7f16337b8972027f6196a17a631ac6de26d22"
   },
+  "linea": {
+    "WETH": "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
+    "USDC": "0x176211869cA2b568f2A7D4EE941E073a821EE1ff"
+  },
   "local": {
     "WETH": "0x87A851C652E5d772ba61ec320753c6349bb3C1E3",
     "USDC": "0x48319aFA7274934321A6D911E3b96A279BCd8858",
@@ -48,11 +52,6 @@
     "200",
     "300"
   ],
-  "Tier1Addresses": [
-    "0x0000000000000000000000000000000000000001",
-    "0x0000000000000000000000000000000000000002",
-    "0x0000000000000000000000000000000000000003"
-  ],
   "sDYSONRecipients": [
     "0x0000000000000000000000000000000000000444",
     "0x0000000000000000000000000000000000000555",
@@ -63,13 +62,14 @@
     "500",
     "600"
   ],
-  "addressBook": "",
+  "factory": "0xecD30C099c222AbffDaf3E2A3d2455FC8e8c739E",
+  "router": "0xa33E48EF82e697143208254FDe53Bf624f2C87E4",
+  "addressBook":"0xec6e504B854efe9F5565e029D7A1929a834E4D1D",
+  "tokenSender": "0xc8A79C843F798d32f335229A13bC346de98c42AB",
+  "wethUsdcPair": "0xCeC911f803D984ae2e5A134b2D15218466993869",
+  "Tier1Addresses": [],
   "DYSON": "",
   "sDYSON": "",
-  "factory": "",
-  "router": "",
-  "tokenSender": "",
-  "wethUsdcPair": "",
   "vesterRecipient": "",
   "dysonToGoFactory": "",
   "toGoOwner": ""

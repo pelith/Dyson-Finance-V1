@@ -22,6 +22,9 @@ contract Addresses is Script {
         } else if (block.chainid == 196) {
             // xlayer
             key = string.concat(".xlayer.", addrId);
+        } else if (block.chainid == 59144) {
+            // linea
+            key = string.concat(".linea.", addrId);
         } else if (block.chainid == 1101) {
             // Polygon zkEVM
             key = string.concat(".polygonZKEVM.", addrId);

@@ -16,7 +16,7 @@ contract StakingRateModel {
     /// For example, if expected initial rate is 1, i.e., STAKING_RATE_BASE_UNIT
     /// then `_initialRate` passed in would be STAKING_RATE_BASE_UNIT / 16
     constructor(uint _initialRate) {
-        initialTime = block.timestamp;
+        initialTime = 1699289390; // dysn global initial time
         initialRate = _initialRate;
     }
 
@@ -236,7 +236,7 @@ contract sDYSON {
         vault.dysonAmount = amount;
         vault.sDysonAmount = sDysonAmount;
         vault.unlockTime = block.timestamp + lockDuration;
-        
+
         dysonAmountStaked[to] += amount;
         votingPower[to] += sDysonAmount;
         vaultCount[to]++;
@@ -295,7 +295,7 @@ contract sDYSON {
 
         _burn(msg.sender, sDysonAmount);
         Dyson.safeTransfer(to, amount);
-        
+
         emit Unstake(msg.sender, to, amount, sDysonAmount);
     }
 
@@ -311,7 +311,7 @@ contract sDYSON {
         uint unlockTime = vault.unlockTime;
         require(unlockTime > 0, "invalid vault");
         delete vaults[msg.sender][index];
-        
+
         dysonAmountStaked[msg.sender] -= dysonAmount;
         votingPower[msg.sender] -= sDysonAmount;
 

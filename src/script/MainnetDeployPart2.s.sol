@@ -21,10 +21,10 @@ import "./Amounts.sol";
 import "forge-std/Test.sol";
 
 contract MainnetDeployScriptPart2 is Addresses, Test {
-    DYSON public dyson = DYSON(getAddress("DYSON"));
-    sDYSON public sDyson = sDYSON(getAddress("sDYSON"));
+    DYSON public dyson;
+    sDYSON public sDyson;
     Factory public factory = Factory(getAddress("factory"));
-    Router public router = Router(payable(getAddress("router")));
+    Router public router;
     AddressBook public addressBook = AddressBook(getAddress("addressBook"));
     TokenSender public tokenSender = TokenSender(getAddress("tokenSender"));
     Pair public weth_usdc_pair = Pair(getAddress("wethUsdcPair"));
@@ -44,59 +44,71 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
     address public dysonGauge;
     address public dysonBribe;
     address public wethGauge;
-    address public wethBribe; 
+    address public wethBribe;
 
     Pair public dysn_usdc_pair;
 
-    uint public constant WEIGHT_DYSN = 153600e12; // Dyson price = 0.25USD, localPool.w => sqrt(640000e6*2560000e18) * 0.008 *15
-    uint public constant WEIGHT_WETH = 1717e12; // ETH price = 2000USD, localPool.w => sqrt(640000e6*320e18) * 0.008 *15
-    uint public constant BASE = 0; // 0.25e18 (0.5 / 2)
-    uint public constant SLOPE = 0; // 0.00000009e18;
-    uint public constant GLOBALRATE = 0; // 0.951e18;
-    uint public constant GLOBALWEIGHT = 821917e18;
+    uint public constant WEIGHT_DYSN = 79.14375e12; // Dyson price = 0.25USD, localPool.w => SQRT(2625*1e6*10500*1e18)*0.00335*1.5*3
+    uint public constant WEIGHT_WETH = 579701867746; // ETH price = 3500USD, localPool.w => SQRT(2625*1e6*0.75*1e18)*0.00335*1.3*3 = 0.5796868309e12
+    uint public constant BASE = 0; // 0.00055e18 = 0.11 / 2
+    uint public constant SLOPE = 0; // 0.00000001056859963e18
+    uint public constant GLOBALRATE = 0; // 0.001628429981e18
+    uint public constant GLOBALWEIGHT = 422.0890512e18;
 
     // Configs for StakingRateModel
     uint initialRate = 0.0625e18;
 
     // Fee rate to DAO wallet
-    uint public feeRateToDao = 0.5e18;
+    // uint public feeRateToDao = 0.5e18;
 
     function run() external {
         address owner = vm.envAddress("OWNER_ADDRESS");
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        address teamWallet = vm.envAddress("TEAM_WALLET");
-        address daoWallet = vm.envAddress("DAO_WALLET");
-
         vm.startBroadcast(deployerPrivateKey);
         factory.becomeController();
 
         // ------------ Deploy all contracts ------------
         // Deploy Agency
-        agency = new Agency(deployer, teamWallet);
+        agency = new Agency(deployer, owner);
+        console.log("%s: %s", "agency", address(agency));
+
+        // Deploy Dyson, sDyson
+        dyson = new DYSON(deployer);
+        sDyson = new sDYSON(deployer, address(dyson));
+        router = new Router(address(weth), deployer, address(factory), address(sDyson), address(dyson));
+        console.log("%s: %s", "dyson", address(dyson));
+        console.log("%s: %s", "sDyson", address(sDyson));
+        console.log("%s: %s", "router", address(router));
+
+        // Deploy StakingRateModel
+        rateModel = new StakingRateModel(initialRate);
+        console.log("%s: %s", "rateModel", address(rateModel));
+
+        // Deploy Farm
+        farm = new Farm(deployer, address(agency), address(dyson));
+        console.log("%s: %s", "farm", address(farm));
+
+        // Create pairs
+        dysn_usdc_pair = Pair(factory.createPair(address(dyson), address(usdc)));
+        console.log("%s: %s", "dysn_usdc_pair", address(dysn_usdc_pair));
+
 
         // Deploy GaugeFactory and BribeFactory
         gaugeFactory = new GaugeFactory(deployer);
         bribeFactory = new BribeFactory(deployer);
-
-        // Deploy StakingRateModel
-        rateModel = new StakingRateModel(initialRate);
-
-        // Deploy Farm
-        farm = new Farm(deployer, address(agency), address(dyson));
-
-        // Create pairs
-        dysn_usdc_pair = Pair(factory.createPair(address(dyson), address(usdc)));
+        console.log("%s: %s", "gaugeFactory", address(gaugeFactory));
+        console.log("%s: %s", "bribeFactory", address(bribeFactory));
 
         // Deploy Gauges and Bribes
         dysonGauge = gaugeFactory.createGauge(address(farm), address(sDyson), address(dysn_usdc_pair), WEIGHT_DYSN, BASE, SLOPE);
         dysonBribe = bribeFactory.createBribe(dysonGauge);
-        
+
         wethGauge = gaugeFactory.createGauge(address(farm), address(sDyson), address(weth_usdc_pair), WEIGHT_WETH, BASE, SLOPE);
         wethBribe = bribeFactory.createBribe(wethGauge);
-        
-        wethFeeDistributor = address(new FeeDistributor(daoWallet, address(weth_usdc_pair), address(wethBribe), daoWallet, feeRateToDao));
-        dysnFeeDistributor = address(new FeeDistributor(daoWallet, address(dysn_usdc_pair), address(dysonBribe), daoWallet, feeRateToDao));
+
+        // wethFeeDistributor = address(new FeeDistributor(owner, address(weth_usdc_pair), address(wethBribe), owner, feeRateToDao));
+        // dysnFeeDistributor = address(new FeeDistributor(owner, address(dysn_usdc_pair), address(dysonBribe), owner, feeRateToDao));
 
         // ------------ Setup configs ------------
         // Add tier1 nodes
@@ -108,11 +120,12 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         dyson.addMinter(address(farm));
 
         // Set feeTo
-        // weth_usdc_pair.setFeeTo(wethFeeDistributor);   
-        // dysn_usdc_pair.setFeeTo(dysnFeeDistributor);  
-        
+        // weth_usdc_pair.setFeeTo(wethFeeDistributor);
+        // dysn_usdc_pair.setFeeTo(dysnFeeDistributor);
+
         // Setup sDyson
         sDyson.setStakingRateModel(address(rateModel));
+        sDyson.transferOwnership(owner);
 
         // Setup farm
         dysn_usdc_pair.setFarm(address(farm));
@@ -125,7 +138,10 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         // Setup global reward rate
         // farm.setGlobalRewardRate(GLOBALRATE, GLOBALWEIGHT);
 
+        addressBook.file("govToken", address(dyson));
+        addressBook.file("govTokenStaking", address(sDyson));
         addressBook.file("farm", address(farm));
+        addressBook.file("router", address(router));
         addressBook.file("agentNFT", address(agency.agentNFT()));
         addressBook.file("agency", address(agency));
         addressBook.setBribeOfGauge(address(dysonGauge), address(dysonBribe));
@@ -133,6 +149,8 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         addressBook.setCanonicalIdOfPair(address(dyson), address(usdc), 1);
 
         // rely token to router
+        router.rely(address(weth), address(weth_usdc_pair), true); // WETH for weth_usdc_pair
+        router.rely(address(usdc), address(weth_usdc_pair), true); // USDC for weth_usdc_pair
         router.rely(address(dyson), address(dysn_usdc_pair), true); // DYSN for dysn_usdc_pair
         router.rely(address(usdc), address(dysn_usdc_pair), true); // USDC for dysn_usdc_pair
         router.rely(address(sDyson), address(dysonGauge), true);
@@ -142,20 +160,16 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         // transfer ownership
         addressBook.file("owner", owner);
         agency.transferOwnership(owner);
-        // dyson.transferOwnership(owner);
+        dyson.transferOwnership(owner);
         factory.setController(owner);
         farm.transferOwnership(owner);
         router.transferOwnership(owner);
-        sDyson.transferOwnership(owner);
-        gaugeFactory.setController(owner);
-        bribeFactory.setController(owner);
 
         // --- After deployment, we need to config the following things: ---
         // Fund DYSON & USDC to dysn_usdc_pair
         // Fund WETH & USDC to weth_usdc_pair
 
         console.log("%s", "done");
-        
         console.log("{");
         console.log("\"%s\": \"%s\",", "addressBook", address(addressBook));
         console.log("\"%s\": \"%s\",", "wrappedNativeToken", address(weth));
