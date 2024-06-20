@@ -68,7 +68,7 @@ fi
 # verify code: forge verify-contract $contractAddress $contractName --etherscan-api-key $scanApiKey --watch --verifier-url $verifyUrl
 # xlayer example :https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER_TESTNET
 
-
+echo forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs -vvvv --broadcast --legacy
 if [ "$is_broadcast" = "y" ]; then
     forge script $target_script --rpc-url $rpc_url --use $solc_version --optimizer-runs $optimizer_runs -vvvv --broadcast --legacy >> log
 else

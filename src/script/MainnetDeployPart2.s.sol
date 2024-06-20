@@ -63,6 +63,10 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
 
     function run() external {
         address owner = vm.envAddress("OWNER_ADDRESS");
+        // vm.startPrank(owner);
+        // addressBook.file("owner", 0x1380f38FC1227C14Cf46C87cFAae897522196fD2);
+        // factory.setController(0x1380f38FC1227C14Cf46C87cFAae897522196fD2);
+        // vm.stopPrank();
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
@@ -107,6 +111,7 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         wethGauge = gaugeFactory.createGauge(address(farm), address(sDyson), address(weth_usdc_pair), WEIGHT_WETH, BASE, SLOPE);
         wethBribe = bribeFactory.createBribe(wethGauge);
 
+
         // wethFeeDistributor = address(new FeeDistributor(owner, address(weth_usdc_pair), address(wethBribe), owner, feeRateToDao));
         // dysnFeeDistributor = address(new FeeDistributor(owner, address(dysn_usdc_pair), address(dysonBribe), owner, feeRateToDao));
 
@@ -114,6 +119,7 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         // Add tier1 nodes
         for(uint i; i < tier1s.length; i++) {
             agency.adminAdd(tier1s[i]);
+            console.log(tier1s[i]);
         }
 
         // Setup minters
@@ -164,6 +170,8 @@ contract MainnetDeployScriptPart2 is Addresses, Test {
         factory.setController(owner);
         farm.transferOwnership(owner);
         router.transferOwnership(owner);
+        wethGauge.transferOwnership(owner);
+        dysonGauge.transferOwnership(owner);
 
         // --- After deployment, we need to config the following things: ---
         // Fund DYSON & USDC to dysn_usdc_pair
