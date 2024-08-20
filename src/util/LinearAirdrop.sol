@@ -18,18 +18,21 @@ contract LinearAirdrop {
     bytes32 public merkleRoot;
 
     uint claimStartTime;
+    uint vestingEndTime;
     uint claimEndTime;
 
     event Claimed(uint256 index, address account, uint256 amount);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    constructor(address _owner, address _dyson, bytes32 _merkleRoot, uint256 _claimStartTime, uint256 _claimEndTime) {
+    constructor(address _owner, address _dyson, bytes32 _merkleRoot, uint256 _claimStartTime, uint256 _vestingEndTime, uint256 _claimEndTime) {
         require(_claimStartTime >= block.timestamp, "Airdrop: Invalid time");
-        require(_claimStartTime <= _claimEndTime, "Airdrop: Invalid time");
+        require(_claimStartTime <= _vestingEndTime, "Airdrop: Invalid time");
+        require(_vestingEndTime <= _claimEndTime, "Airdrop: Invalid time");
         owner = _owner;
         dyson = _dyson;
         merkleRoot = _merkleRoot;
         claimStartTime = _claimStartTime;
+        vestingEndTime = _vestingEndTime;
         claimEndTime = _claimEndTime;
     }
 
@@ -37,8 +40,9 @@ contract LinearAirdrop {
         merkleRoot = _merkleRoot;
     }
 
-    function setAirdropTime (uint256 _claimStartTime, uint256 _claimEndTime) external onlyOwner {
+    function setAirdropTime (uint256 _claimStartTime, uint256 _vestingEndTime, uint256 _claimEndTime) external onlyOwner {
         claimStartTime = _claimStartTime;
+        vestingEndTime = _vestingEndTime;
         claimEndTime = _claimEndTime;
     }
 
@@ -73,7 +77,8 @@ contract LinearAirdrop {
         _setClaimed(index);
 
         // Calculate the amount
-        amount = amount * (block.timestamp - claimStartTime) / (claimEndTime - claimStartTime);
+        if(block.timestamp < vestingEndTime)
+            amount = amount * (block.timestamp - claimStartTime) / (vestingEndTime - claimStartTime);
         // Transfer DYSON to account
         IERC20(dyson).safeTransfer(account, amount);
 
