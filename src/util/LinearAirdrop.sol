@@ -80,7 +80,7 @@ contract LinearAirdrop {
         if(block.timestamp < vestingEndTime)
             amount = amount * (block.timestamp - claimStartTime) / (vestingEndTime - claimStartTime);
         // Transfer DYSON to account
-        IERC20(dyson).safeTransfer(account, amount);
+        dyson.safeTransfer(account, amount);
 
         emit Claimed(index, account, amount);
     }
